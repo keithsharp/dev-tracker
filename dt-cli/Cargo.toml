@@ -1,0 +1,14 @@
+[package]
+name = "dt-cli"
+description = "Command lien for managing projects and activities"
+
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow = "1.0.71"
+clap = { version = "4.3.1", features = ["derive"] }
+dev-tracker-core = { path = "../dev-tracker-core" }
+dirs = "5.0.1"

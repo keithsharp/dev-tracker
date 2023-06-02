@@ -1,6 +1,7 @@
 [workspace]
 members = [
 	"dev-tracker-core",
+	"dt-cli",
 ]
 
 [workspace.package]
