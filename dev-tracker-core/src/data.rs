@@ -1,7 +1,9 @@
 use std::path::{Path, PathBuf};
 
+use chrono::Utc;
 use rusqlite::Connection;
 
+use crate::model::activity::Activity;
 use crate::model::activitytype::ActivityType;
 use crate::model::project::Project;
 use crate::model::{activity, activitytype, project};
@@ -219,6 +221,126 @@ impl DataStore {
             .collect();
 
         Ok(ats)
+    }
+}
+
+// Activity
+impl DataStore {
+    pub fn get_activity_with_id(&self, id: u64) -> Result<Option<Activity>, Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, project, atype, description, start, end FROM activities WHERE id=?1",
+        )?;
+
+        let mut activities: Vec<_> = stmt
+            .query_map([id], |row| {
+                Ok(Activity {
+                    id: row.get(0)?,
+                    project: row.get(1)?,
+                    atype: row.get(2)?,
+                    description: row.get(3)?,
+                    start: row.get(4)?,
+                    end: row.get(5)?,
+                })
+            })?
+            .filter_map(|a| a.ok())
+            .collect();
+
+        if activities.len() == 1 {
+            return Ok(Some(activities.remove(0)));
+        } else {
+            return Ok(None);
+        }
+    }
+
+    pub fn get_running_activity(&self) -> Result<Option<Activity>, Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, project, atype, description, start FROM activities WHERE end IS NULL",
+        )?;
+
+        let mut activities: Vec<_> = stmt
+            .query_map([], |row| {
+                Ok(Activity {
+                    id: row.get(0)?,
+                    project: row.get(1)?,
+                    atype: row.get(2)?,
+                    description: row.get(3)?,
+                    start: row.get(4)?,
+                    end: None,
+                })
+            })?
+            .filter_map(|a| a.ok())
+            .collect();
+
+        if activities.len() == 1 {
+            return Ok(Some(activities.remove(0)));
+        } else {
+            return Ok(None);
+        }
+    }
+
+    pub fn start_activity(&self, activity: Activity) -> Result<(), Error> {
+        self.conn.execute(
+            "INSERT INTO activities (project, atype, description, start) VALUES (?1, ?2, ?3, ?4)",
+            (
+                &activity.project,
+                &activity.atype,
+                &activity.description,
+                &activity.start,
+            ),
+        )?;
+
+        Ok(())
+    }
+
+    pub fn stop_running_activity(&self) -> Result<Option<Activity>, Error> {
+        let Some(mut activity) = self.get_running_activity()? else {
+            return Ok(None);
+        };
+
+        activity.end = Some(Utc::now());
+        self.update_activity(&activity)?;
+
+        Ok(Some(activity))
+    }
+
+    pub fn delete_activity(&self, activity: Activity) -> Result<(), Error> {
+        self.conn.execute(
+            "DELETE FROM activities WHERE id=?1",
+            &[&activity.id.to_string()],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn update_activity(&self, activity: &Activity) -> Result<(), Error> {
+        self.conn.execute(
+            "UPDATE activities SET project=?2, atype=?3, description=?4, start=?5, end=?6 WHERE id=?1",
+            (&activity.id, &activity.project, &activity.atype, &activity.description, &activity.start, &activity.end),
+        )?;
+
+        Ok(())
+    }
+
+    // TODO: move this to the Project impl section above?
+    pub fn get_activities(&self, project: &Project) -> Result<Vec<Activity>, Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, project, atype, description, start, end FROM activities WHERE project=?1",
+        )?;
+        let activities: Vec<_> = stmt
+            .query_map([project.id], |row| {
+                Ok(Activity {
+                    id: row.get(0)?,
+                    project: row.get(1)?,
+                    atype: row.get(2)?,
+                    description: row.get(3)?,
+                    start: row.get(4)?,
+                    end: row.get(5)?,
+                })
+            })?
+            .filter_map(|p| p.ok())
+            .collect();
+
+        Ok(activities)
     }
 }
 

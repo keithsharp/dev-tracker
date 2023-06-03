@@ -25,10 +25,10 @@ pub enum Command {
     Rename(RenameCommand),
     // #[clap(subcommand)]
     // Set,
-    // #[clap(subcommand)]
-    // Start,
-    // #[clap(subcommand)]
-    // Stop,
+    #[clap(subcommand)]
+    Start(StartCommand),
+    #[clap(subcommand)]
+    Stop(StopCommand),
     #[clap(subcommand)]
     Update(UpdateCommand),
 }
@@ -54,12 +54,18 @@ pub struct AddActivityTypeArgs {
 #[derive(Subcommand)]
 pub enum DeleteCommand {
     Project(DeleteProjectArgs),
+    Activity(DeleteActivityArgs),
     ActivityType(DeleteActivityTypeArgs),
 }
 
 #[derive(Args)]
 pub struct DeleteProjectArgs {
     pub name: String,
+}
+
+#[derive(Args)]
+pub struct DeleteActivityArgs {
+    pub id: u64,
 }
 
 #[derive(Args)]
@@ -70,6 +76,7 @@ pub struct DeleteActivityTypeArgs {
 #[derive(Subcommand)]
 pub enum DescribeCommand {
     Project(DescribeProjectArgs),
+    Activity(DescribeActivityArgs),
 }
 
 #[derive(Args)]
@@ -77,10 +84,29 @@ pub struct DescribeProjectArgs {
     pub name: String,
 }
 
+#[derive(Args)]
+pub struct DescribeActivityArgs {
+    pub id: u64,
+}
+
 #[derive(Subcommand)]
 pub enum ListCommand {
     Projects,
-    ActivityTypes,
+    Activities(ListActivityArgs),
+    ActivityTypes(ListActivityTypeArgs),
+}
+
+#[derive(Args)]
+pub struct ListActivityArgs {
+    #[clap(short, action)]
+    pub verbose: bool,
+    pub project: String,
+}
+
+#[derive(Args)]
+pub struct ListActivityTypeArgs {
+    #[clap(short, action)]
+    pub verbose: bool,
 }
 
 #[derive(Subcommand)]
@@ -99,6 +125,22 @@ pub struct RenameProjectArgs {
 pub struct RenameActivityTypeArgs {
     pub old_name: String,
     pub new_name: String,
+}
+
+#[derive(Subcommand)]
+pub enum StartCommand {
+    Activity(StartActivityArgs),
+}
+
+#[derive(Args)]
+pub struct StartActivityArgs {
+    pub project: String,
+    pub activity_type: String,
+}
+
+#[derive(Subcommand)]
+pub enum StopCommand {
+    Activity,
 }
 
 #[derive(Subcommand)]

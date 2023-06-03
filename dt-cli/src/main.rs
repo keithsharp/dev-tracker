@@ -25,18 +25,27 @@ fn main() -> anyhow::Result<()> {
         },
         cli::Command::Delete(command) => match command {
             cli::DeleteCommand::Project(args) => ops::delete_project(args, &ds)?,
+            cli::DeleteCommand::Activity(args) => ops::delete_activity(args, &ds)?,
             cli::DeleteCommand::ActivityType(args) => ops::delete_activitytype(args, &ds)?,
         },
         cli::Command::Describe(command) => match command {
             cli::DescribeCommand::Project(args) => ops::describe_project(args, &ds)?,
+            cli::DescribeCommand::Activity(args) => ops::describe_activity(args, &ds)?,
         },
         cli::Command::List(command) => match command {
             cli::ListCommand::Projects => ops::list_projects(&ds)?,
-            cli::ListCommand::ActivityTypes => ops::list_activitytypes(&ds)?,
+            cli::ListCommand::Activities(args) => ops::list_activities(args, &ds)?,
+            cli::ListCommand::ActivityTypes(args) => ops::list_activitytypes(args, &ds)?,
         },
         cli::Command::Rename(command) => match command {
             cli::RenameCommand::Project(args) => ops::rename_project(args, &ds)?,
             cli::RenameCommand::ActivityType(args) => ops::rename_activitytype(args, &ds)?,
+        },
+        cli::Command::Start(command) => match command {
+            cli::StartCommand::Activity(args) => ops::start_activity(args, &ds)?,
+        },
+        cli::Command::Stop(command) => match command {
+            cli::StopCommand::Activity => ops::stop_activity(&ds)?,
         },
         cli::Command::Update(command) => match command {
             cli::UpdateCommand::Project(args) => ops::update_project(args, &ds)?,
