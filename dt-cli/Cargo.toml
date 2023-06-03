@@ -1,11 +1,15 @@
 [package]
 name = "dt-cli"
-description = "Command line for managing projects and activities"
+description = "Command line for tracking projects and activities"
 
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
 version.workspace = true
+
+[[bin]]
+name = "dt"
+path ="./src/main.rs"
 
 [dependencies]
 anyhow = "1.0.71"
