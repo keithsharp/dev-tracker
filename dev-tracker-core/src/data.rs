@@ -2,8 +2,9 @@ use std::path::{Path, PathBuf};
 
 use rusqlite::Connection;
 
+use crate::model::activitytype::ActivityType;
 use crate::model::project::Project;
-use crate::model::{activity, project};
+use crate::model::{activity, activitytype, project};
 use crate::Error;
 
 #[derive(Debug)]
@@ -30,6 +31,7 @@ impl DataStore {
     }
 }
 
+// Project
 impl DataStore {
     pub fn add_project(&self, project: &Project) -> Result<(), Error> {
         self.conn.execute(
@@ -126,10 +128,105 @@ impl DataStore {
     }
 }
 
+// ActivityType
+impl DataStore {
+    pub fn add_activitytype(&self, at: ActivityType) -> Result<(), Error> {
+        self.conn.execute(
+            "INSERT INTO activitytypes (name, description) VALUES (?1, ?2)",
+            (&at.name, &at.description),
+        )?;
+
+        Ok(())
+    }
+
+    // TODO: should this check for activities using this type before
+    // deleting, or should that be done by the application?
+    pub fn delete_activitytype(&self, at: ActivityType) -> Result<(), Error> {
+        self.conn.execute(
+            "DELETE FROM activitytypes WHERE id=?1",
+            &[&at.id.to_string()],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn update_activitytype(&self, at: &ActivityType) -> Result<(), Error> {
+        self.conn.execute(
+            "UPDATE activitytypes SET name=?2, description=?3 WHERE id=?1",
+            (&at.id, &at.name, &at.description),
+        )?;
+
+        Ok(())
+    }
+
+    pub fn get_activitytype_with_id(&self, id: u64) -> Result<Option<ActivityType>, Error> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name, description FROM activitytypes WHERE id=?1")?;
+        let mut ats: Vec<ActivityType> = stmt
+            .query_map([&id.to_string()], |row| {
+                Ok(ActivityType {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    description: row.get(2)?,
+                })
+            })?
+            .filter_map(|p| p.ok())
+            .collect();
+
+        if ats.len() == 1 {
+            return Ok(Some(ats.remove(0)));
+        } else {
+            return Ok(None);
+        }
+    }
+
+    pub fn get_activitytype_with_name(&self, name: &str) -> Result<Option<ActivityType>, Error> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name, description FROM activitytypes WHERE name=?1")?;
+        let mut ats: Vec<ActivityType> = stmt
+            .query_map([name], |row| {
+                Ok(ActivityType {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    description: row.get(2)?,
+                })
+            })?
+            .filter_map(|p| p.ok())
+            .collect();
+
+        if ats.len() == 1 {
+            return Ok(Some(ats.remove(0)));
+        } else {
+            return Ok(None);
+        }
+    }
+
+    pub fn get_activitytypes(&self) -> Result<Vec<ActivityType>, Error> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name, description FROM activitytypes")?;
+        let ats: Vec<_> = stmt
+            .query_map([], |row| {
+                Ok(ActivityType {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    description: row.get(2)?,
+                })
+            })?
+            .filter_map(|p| p.ok())
+            .collect();
+
+        Ok(ats)
+    }
+}
+
 impl DataStore {
     fn init_tables(&self) -> Result<(), Error> {
         project::init_table(&self.conn)?;
         activity::init_table(&self.conn)?;
+        activitytype::init_table(&self.conn)?;
 
         Ok(())
     }

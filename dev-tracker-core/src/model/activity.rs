@@ -1,52 +1,10 @@
-use std::error::Error;
 use std::fmt::Display;
-use std::str::FromStr;
 
 use chrono::{DateTime, Duration, Utc};
 use rusqlite::Connection;
 
+use crate::model::ActivityType;
 use crate::model::Project;
-
-#[derive(Debug)]
-pub enum ActivityType {
-    Coding,
-    Research,
-}
-
-impl Display for ActivityType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let activity = match self {
-            ActivityType::Coding => "coding",
-            ActivityType::Research => "researching",
-        };
-        write!(f, "{}", activity)
-    }
-}
-
-impl FromStr for ActivityType {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "coding" => Ok(ActivityType::Coding),
-            "researching" => Ok(ActivityType::Research),
-            _ => Err(()),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct ActivityTypeParseError(String);
-
-impl Error for ActivityTypeParseError {}
-
-impl Display for ActivityTypeParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ActivityTypeParseError(s) => write!(f, "could not parse '{}' into an ActivityType", s),
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct Activity {
@@ -125,7 +83,7 @@ pub(crate) fn init_table(conn: &Connection) -> Result<(), crate::Error> {
         "CREATE TABLE IF NOT EXISTS activitys (
             id          INTEGER PRIMARY KEY,
             project     INTEGER NOT NULL,
-            atype       TEXT NOT NULL,
+            atype       u64,
             description TEXT,
             start       DATETIME NOT NULL,
             end         DATETIME

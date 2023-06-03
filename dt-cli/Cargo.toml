@@ -1,6 +1,6 @@
 [package]
 name = "dt-cli"
-description = "Command lien for managing projects and activities"
+description = "Command line for managing projects and activities"
 
 authors.workspace = true
 edition.workspace = true

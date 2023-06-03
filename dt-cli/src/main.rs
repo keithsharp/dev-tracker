@@ -21,21 +21,26 @@ fn main() -> anyhow::Result<()> {
     match args.command {
         cli::Command::Add(command) => match command {
             cli::AddCommand::Project(args) => ops::add_project(args, &ds)?,
+            cli::AddCommand::ActivityType(args) => ops::add_activitytype(args, &ds)?,
         },
         cli::Command::Delete(command) => match command {
             cli::DeleteCommand::Project(args) => ops::delete_project(args, &ds)?,
+            cli::DeleteCommand::ActivityType(args) => ops::delete_activitytype(args, &ds)?,
         },
         cli::Command::Describe(command) => match command {
             cli::DescribeCommand::Project(args) => ops::describe_project(args, &ds)?,
         },
         cli::Command::List(command) => match command {
             cli::ListCommand::Projects => ops::list_projects(&ds)?,
+            cli::ListCommand::ActivityTypes => ops::list_activitytypes(&ds)?,
         },
         cli::Command::Rename(command) => match command {
             cli::RenameCommand::Project(args) => ops::rename_project(args, &ds)?,
+            cli::RenameCommand::ActivityType(args) => ops::rename_activitytype(args, &ds)?,
         },
         cli::Command::Update(command) => match command {
             cli::UpdateCommand::Project(args) => ops::update_project(args, &ds)?,
+            cli::UpdateCommand::ActivityType(args) => ops::update_activitytype(args, &ds)?,
         },
     }
 

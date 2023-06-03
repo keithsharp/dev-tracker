@@ -36,6 +36,7 @@ pub enum Command {
 #[derive(Subcommand)]
 pub enum AddCommand {
     Project(AddProjectArgs),
+    ActivityType(AddActivityTypeArgs),
 }
 
 #[derive(Args)]
@@ -44,13 +45,25 @@ pub struct AddProjectArgs {
     pub path: PathBuf,
 }
 
+#[derive(Args)]
+pub struct AddActivityTypeArgs {
+    pub name: String,
+    pub description: Option<String>,
+}
+
 #[derive(Subcommand)]
 pub enum DeleteCommand {
     Project(DeleteProjectArgs),
+    ActivityType(DeleteActivityTypeArgs),
 }
 
 #[derive(Args)]
 pub struct DeleteProjectArgs {
+    pub name: String,
+}
+
+#[derive(Args)]
+pub struct DeleteActivityTypeArgs {
     pub name: String,
 }
 
@@ -67,11 +80,13 @@ pub struct DescribeProjectArgs {
 #[derive(Subcommand)]
 pub enum ListCommand {
     Projects,
+    ActivityTypes,
 }
 
 #[derive(Subcommand)]
 pub enum RenameCommand {
     Project(RenameProjectArgs),
+    ActivityType(RenameActivityTypeArgs),
 }
 
 #[derive(Args)]
@@ -80,13 +95,26 @@ pub struct RenameProjectArgs {
     pub new_name: String,
 }
 
+#[derive(Args)]
+pub struct RenameActivityTypeArgs {
+    pub old_name: String,
+    pub new_name: String,
+}
+
 #[derive(Subcommand)]
 pub enum UpdateCommand {
     Project(UpdateProjectArgs),
+    ActivityType(UpdateActivityTypeArgs),
 }
 
 #[derive(Args)]
 pub struct UpdateProjectArgs {
     pub name: String,
     pub path: PathBuf,
+}
+
+#[derive(Args)]
+pub struct UpdateActivityTypeArgs {
+    pub name: String,
+    pub description: Option<String>,
 }
