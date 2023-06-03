@@ -9,7 +9,8 @@ use crate::cli::{
     AddActivityTypeArgs, AddProjectArgs, DeleteActivityArgs, DeleteActivityTypeArgs,
     DeleteProjectArgs, DescribeActivityArgs, DescribeProjectArgs, ListActivityArgs,
     ListActivityTypeArgs, RenameActivityTypeArgs, RenameProjectArgs, StartActivityArgs,
-    UpdateActivityTypeArgs, UpdateProjectArgs,
+    UpdateActivityActivityTypeArgs, UpdateActivityDescriptionArgs, UpdateActivityEndArgs,
+    UpdateActivityProjectArgs, UpdateActivityTypeArgs, UpdateProjectArgs,
 };
 
 pub fn add_project(args: AddProjectArgs, ds: &DataStore) -> anyhow::Result<()> {
@@ -275,7 +276,7 @@ pub fn start_activity(args: StartActivityArgs, ds: &DataStore) -> anyhow::Result
         }
     };
 
-    let activity = Activity::new(&project, at);
+    let activity = Activity::new(&project, at, args.description);
     ds.start_activity(activity)?;
 
     Ok(())
@@ -300,6 +301,101 @@ pub fn update_project(args: UpdateProjectArgs, ds: &DataStore) -> anyhow::Result
             process::exit(1);
         }
     }
+
+    Ok(())
+}
+
+pub fn update_activity_description(
+    args: UpdateActivityDescriptionArgs,
+    ds: &DataStore,
+) -> anyhow::Result<()> {
+    let mut activity = match ds.get_activity_with_id(args.id)? {
+        Some(activity) => activity,
+        None => {
+            eprintln!("Update failed, no such actvity: {}", args.id);
+            process::exit(1);
+        }
+    };
+
+    activity.set_description(args.description);
+    ds.update_activity(&activity)?;
+
+    Ok(())
+}
+
+pub fn update_activity_atype(
+    args: UpdateActivityActivityTypeArgs,
+    ds: &DataStore,
+) -> anyhow::Result<()> {
+    let mut activity = match ds.get_activity_with_id(args.id)? {
+        Some(activity) => activity,
+        None => {
+            eprintln!("Update failed, no such actvity: {}", args.id);
+            process::exit(1);
+        }
+    };
+
+    let at = match ds.get_activitytype_with_name(&args.atype)? {
+        Some(at) => at,
+        None => {
+            eprintln!("Update failed, no such activity type: {}", args.atype);
+            process::exit(1);
+        }
+    };
+
+    activity.set_atype(at.id());
+    ds.update_activity(&activity)?;
+
+    Ok(())
+}
+
+pub fn update_activity_end(args: UpdateActivityEndArgs, ds: &DataStore) -> anyhow::Result<()> {
+    let mut activity = match ds.get_activity_with_id(args.id)? {
+        Some(activity) => activity,
+        None => {
+            eprintln!("Update failed, no such actvity: {}", args.id);
+            process::exit(1);
+        }
+    };
+
+    if args.end < activity.start_time() {
+        let local_start: DateTime<Local> = DateTime::from(activity.start_time());
+        eprintln!(
+            "Update failed, end time {} is before start time {}",
+            args.end.format("%I:%M%P on %A %d %B %Y"),
+            local_start.format("%I:%M%P on %A %d %B %Y")
+        );
+        process::exit(1);
+    }
+
+    activity.set_end_time(Some(args.end));
+    ds.update_activity(&activity)?;
+
+    Ok(())
+}
+
+pub fn update_activity_project(
+    args: UpdateActivityProjectArgs,
+    ds: &DataStore,
+) -> anyhow::Result<()> {
+    let mut activity = match ds.get_activity_with_id(args.id)? {
+        Some(activity) => activity,
+        None => {
+            eprintln!("Update failed, no such actvity: {}", args.id);
+            process::exit(1);
+        }
+    };
+
+    let project = match ds.get_project_with_name(&args.project)? {
+        Some(project) => project,
+        None => {
+            eprintln!("Update failed, no such project: {}", args.project);
+            process::exit(1);
+        }
+    };
+
+    activity.set_project(project.id());
+    ds.update_activity(&activity)?;
 
     Ok(())
 }

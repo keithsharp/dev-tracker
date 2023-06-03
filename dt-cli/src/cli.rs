@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use chrono::offset::TimeZone;
+use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
@@ -9,6 +11,17 @@ pub struct Arguments {
     pub command: Command,
     #[clap(long)]
     pub config_file: Option<PathBuf>,
+}
+
+fn parse_datetime(arg: &str) -> Result<DateTime<Utc>, chrono::format::ParseError> {
+    let datetime = NaiveDateTime::parse_from_str(arg, "%Y-%m-%dT%H:%M")?;
+    let datetime = match Local.from_local_datetime(&datetime) {
+        chrono::LocalResult::Single(datetime) => datetime,
+        _ => panic!("Failed to convert local datetime into UTC datetime."),
+    };
+    let datetime: DateTime<Utc> = DateTime::from(datetime);
+
+    Ok(datetime)
 }
 
 #[derive(Subcommand)]
@@ -143,6 +156,7 @@ pub enum StartCommand {
 pub struct StartActivityArgs {
     pub project: String,
     pub activity_type: String,
+    pub description: Option<String>,
 }
 
 #[derive(Subcommand)]
@@ -153,6 +167,7 @@ pub enum StopCommand {
 #[derive(Subcommand)]
 pub enum UpdateCommand {
     Project(UpdateProjectArgs),
+    Activity(UpdateActivityArgs),
     ActivityType(UpdateActivityTypeArgs),
 }
 
@@ -160,6 +175,44 @@ pub enum UpdateCommand {
 pub struct UpdateProjectArgs {
     pub name: String,
     pub path: PathBuf,
+}
+
+#[derive(Args)]
+pub struct UpdateActivityArgs {
+    #[clap(subcommand)]
+    pub command: UpdateActivityCommand,
+}
+
+#[derive(Subcommand)]
+pub enum UpdateActivityCommand {
+    End(UpdateActivityEndArgs),
+    ActivityType(UpdateActivityActivityTypeArgs),
+    Description(UpdateActivityDescriptionArgs),
+    Project(UpdateActivityProjectArgs),
+}
+
+#[derive(Args)]
+pub struct UpdateActivityDescriptionArgs {
+    pub id: u64,
+    pub description: Option<String>,
+}
+#[derive(Args)]
+pub struct UpdateActivityEndArgs {
+    pub id: u64,
+    #[arg(value_parser = parse_datetime)]
+    pub end: DateTime<Utc>,
+}
+
+#[derive(Args)]
+pub struct UpdateActivityActivityTypeArgs {
+    pub id: u64,
+    pub atype: String,
+}
+
+#[derive(Args)]
+pub struct UpdateActivityProjectArgs {
+    pub id: u64,
+    pub project: String,
 }
 
 #[derive(Args)]

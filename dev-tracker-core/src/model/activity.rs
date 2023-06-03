@@ -11,7 +11,7 @@ pub struct Activity {
     pub(crate) id: u64,
     pub(crate) project: u64,
     pub(crate) atype: u64,
-    pub(crate) description: String,
+    pub(crate) description: Option<String>,
     pub(crate) start: DateTime<Utc>,
     pub(crate) end: Option<DateTime<Utc>>,
 }
@@ -65,12 +65,12 @@ impl Display for Activity {
 }
 
 impl Activity {
-    pub fn new(project: &Project, atype: ActivityType) -> Self {
+    pub fn new(project: &Project, atype: ActivityType, description: Option<String>) -> Self {
         Self {
             id: 0,
             project: project.id(),
             atype: atype.id,
-            description: String::default(),
+            description,
             start: Utc::now(),
             end: None,
         }
@@ -84,12 +84,24 @@ impl Activity {
         self.project
     }
 
+    pub fn set_project(&mut self, id: u64) {
+        self.project = id;
+    }
+
     pub fn atype(&self) -> u64 {
         self.atype
     }
 
-    pub fn description(&self) -> &str {
-        &self.description
+    pub fn set_atype(&mut self, id: u64) {
+        self.atype = id;
+    }
+
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+
+    pub fn set_description(&mut self, description: Option<String>) {
+        self.description = description;
     }
 
     pub fn start_time(&self) -> DateTime<Utc> {
@@ -98,6 +110,10 @@ impl Activity {
 
     pub fn end_time(&self) -> Option<DateTime<Utc>> {
         self.end
+    }
+
+    pub fn set_end_time(&mut self, end: Option<DateTime<Utc>>) {
+        self.end = end;
     }
 
     // TODO: should this throw an error rather than silently overwrite
