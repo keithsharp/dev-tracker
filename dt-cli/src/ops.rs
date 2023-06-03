@@ -42,6 +42,20 @@ pub fn add_activitytype(args: AddActivityTypeArgs, ds: &DataStore) -> anyhow::Re
     Ok(())
 }
 
+pub fn cancel_actvity(ds: &DataStore) -> anyhow::Result<()> {
+    let activity = match ds.get_running_activity()? {
+        Some(activity) => activity,
+        None => {
+            eprintln!("Cancel failed, no activity running");
+            process::exit(1);
+        }
+    };
+
+    ds.delete_activity(activity)?;
+
+    Ok(())
+}
+
 pub fn delete_project(args: DeleteProjectArgs, ds: &DataStore) -> anyhow::Result<()> {
     match ds.get_project_with_name(&args.name)? {
         Some(project) => ds.delete_project(project)?,

@@ -28,6 +28,9 @@ fn main() -> anyhow::Result<()> {
             cli::DeleteCommand::Activity(args) => ops::delete_activity(args, &ds)?,
             cli::DeleteCommand::ActivityType(args) => ops::delete_activitytype(args, &ds)?,
         },
+        cli::Command::Cancel(command) => match command {
+            cli::CancelCommand::Activity => ops::cancel_actvity(&ds)?,
+        },
         cli::Command::Describe(command) => match command {
             cli::DescribeCommand::Project(args) => ops::describe_project(args, &ds)?,
             cli::DescribeCommand::Activity(args) => ops::describe_activity(args, &ds)?,

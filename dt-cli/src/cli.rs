@@ -16,6 +16,8 @@ pub enum Command {
     #[clap(subcommand)]
     Add(AddCommand),
     #[clap(subcommand)]
+    Cancel(CancelCommand),
+    #[clap(subcommand)]
     Delete(DeleteCommand),
     #[clap(subcommand)]
     Describe(DescribeCommand),
@@ -49,6 +51,11 @@ pub struct AddProjectArgs {
 pub struct AddActivityTypeArgs {
     pub name: String,
     pub description: Option<String>,
+}
+
+#[derive(Subcommand)]
+pub enum CancelCommand {
+    Activity,
 }
 
 #[derive(Subcommand)]
