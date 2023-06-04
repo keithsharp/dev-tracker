@@ -135,7 +135,7 @@ pub(crate) fn init_table(conn: &Connection) -> Result<(), crate::Error> {
         "CREATE TABLE IF NOT EXISTS activities (
             id          INTEGER PRIMARY KEY,
             project     INTEGER NOT NULL,
-            atype       u64,
+            atype       INTEGER NOT NULL,
             description TEXT,
             start       DATETIME NOT NULL,
             end         DATETIME
