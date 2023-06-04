@@ -51,7 +51,6 @@ fn main() -> anyhow::Result<()> {
             cli::StopCommand::Activity => ops::stop_activity(&ds)?,
         },
         cli::Command::Update(command) => match command {
-            cli::UpdateCommand::Project(args) => ops::update_project(args, &ds)?,
             cli::UpdateCommand::ActivityType(args) => ops::update_activitytype(args, &ds)?,
             cli::UpdateCommand::Activity(args) => match args.command {
                 cli::UpdateActivityCommand::Description(args) => {

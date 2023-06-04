@@ -166,15 +166,8 @@ pub enum StopCommand {
 
 #[derive(Subcommand)]
 pub enum UpdateCommand {
-    Project(UpdateProjectArgs),
     Activity(UpdateActivityArgs),
     ActivityType(UpdateActivityTypeArgs),
-}
-
-#[derive(Args)]
-pub struct UpdateProjectArgs {
-    pub name: String,
-    pub path: PathBuf,
 }
 
 #[derive(Args)]

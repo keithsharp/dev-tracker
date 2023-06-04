@@ -10,7 +10,7 @@ use crate::cli::{
     DeleteProjectArgs, DescribeActivityArgs, DescribeProjectArgs, ListActivityArgs,
     ListActivityTypeArgs, RenameActivityTypeArgs, RenameProjectArgs, StartActivityArgs,
     UpdateActivityActivityTypeArgs, UpdateActivityDescriptionArgs, UpdateActivityEndArgs,
-    UpdateActivityProjectArgs, UpdateActivityTypeArgs, UpdateProjectArgs,
+    UpdateActivityProjectArgs, UpdateActivityTypeArgs,
 };
 
 pub fn add_project(args: AddProjectArgs, ds: &DataStore) -> anyhow::Result<()> {
@@ -20,7 +20,7 @@ pub fn add_project(args: AddProjectArgs, ds: &DataStore) -> anyhow::Result<()> {
             process::exit(1);
         }
         None => {
-            let project = Project::new(args.name, args.path);
+            let project = Project::new(args.name);
             ds.add_project(&project)?;
         }
     }
@@ -97,7 +97,10 @@ pub fn describe_project(args: DescribeProjectArgs, ds: &DataStore) -> anyhow::Re
     match ds.get_project_with_name(&args.name)? {
         Some(project) => {
             println!("Project name: {}", project.name());
-            println!("Repository path: {}", project.path().display());
+            let repos = ds.get_repos(&project)?;
+            for repo in repos {
+                println!("Repository path: {}", repo.path().display());
+            }
         }
         None => {
             eprintln!("Describe failed, no such project: {}", args.name);
@@ -287,21 +290,6 @@ pub fn stop_activity(ds: &DataStore) -> anyhow::Result<()> {
         eprintln!("Stop activity failed, no activity running");
         process::exit(1)
     };
-    Ok(())
-}
-
-pub fn update_project(args: UpdateProjectArgs, ds: &DataStore) -> anyhow::Result<()> {
-    match ds.get_project_with_name(&args.name)? {
-        Some(mut project) => {
-            project.set_path(args.path);
-            ds.update_project(&project)?;
-        }
-        None => {
-            eprintln!("Update failed, no such project: {}", args.name);
-            process::exit(1);
-        }
-    }
-
     Ok(())
 }
 

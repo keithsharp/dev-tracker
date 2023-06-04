@@ -6,7 +6,8 @@ use rusqlite::Connection;
 use crate::model::activity::Activity;
 use crate::model::activitytype::ActivityType;
 use crate::model::project::Project;
-use crate::model::{activity, activitytype, project};
+use crate::model::repo::Repo;
+use crate::model::{activity, activitytype, project, repo};
 use crate::Error;
 
 #[derive(Debug)]
@@ -36,10 +37,8 @@ impl DataStore {
 // Project
 impl DataStore {
     pub fn add_project(&self, project: &Project) -> Result<(), Error> {
-        self.conn.execute(
-            "INSERT INTO projects (name, path) VALUES (?1, ?2)",
-            (&project.name, &project.path.display().to_string()),
-        )?;
+        self.conn
+            .execute("INSERT INTO projects (name) VALUES (?1)", &[&project.name])?;
 
         Ok(())
     }
@@ -55,12 +54,8 @@ impl DataStore {
 
     pub fn update_project(&self, project: &Project) -> Result<(), Error> {
         self.conn.execute(
-            "UPDATE projects SET name=?2, path=?3 WHERE id=?1",
-            (
-                &project.id,
-                &project.name,
-                &project.path.display().to_string(),
-            ),
+            "UPDATE projects SET name=?2 WHERE id=?1",
+            (&project.id, &project.name),
         )?;
 
         Ok(())
@@ -69,14 +64,12 @@ impl DataStore {
     pub fn get_project_with_id(&self, id: u64) -> Result<Option<Project>, Error> {
         let mut stmt = self
             .conn
-            .prepare("SELECT id, name, path FROM projects WHERE id=?1")?;
+            .prepare("SELECT id, name FROM projects WHERE id=?1")?;
         let mut projects: Vec<Project> = stmt
             .query_map([&id.to_string()], |row| {
-                let path: String = row.get(2)?;
                 Ok(Project {
                     id: row.get(0)?,
                     name: row.get(1)?,
-                    path: PathBuf::from(path),
                 })
             })?
             .filter_map(|p| p.ok())
@@ -92,14 +85,12 @@ impl DataStore {
     pub fn get_project_with_name(&self, name: &str) -> Result<Option<Project>, Error> {
         let mut stmt = self
             .conn
-            .prepare("SELECT id, name, path FROM projects WHERE name=?1")?;
+            .prepare("SELECT id, name FROM projects WHERE name=?1")?;
         let mut projects: Vec<Project> = stmt
             .query_map([name], |row| {
-                let path: String = row.get(2)?;
                 Ok(Project {
                     id: row.get(0)?,
                     name: row.get(1)?,
-                    path: PathBuf::from(path),
                 })
             })?
             .filter_map(|p| p.ok())
@@ -113,14 +104,12 @@ impl DataStore {
     }
 
     pub fn get_projects(&self) -> Result<Vec<Project>, Error> {
-        let mut stmt = self.conn.prepare("SELECT id, name, path FROM projects")?;
+        let mut stmt = self.conn.prepare("SELECT id, name FROM projects")?;
         let projects: Vec<_> = stmt
             .query_map([], |row| {
-                let path: String = row.get(2)?;
                 Ok(Project {
                     id: row.get(0)?,
                     name: row.get(1)?,
-                    path: PathBuf::from(path),
                 })
             })?
             .filter_map(|p| p.ok())
@@ -344,11 +333,108 @@ impl DataStore {
     }
 }
 
+// Repos
+impl DataStore {
+    pub fn add_repo(&self, repo: &Repo) -> Result<(), Error> {
+        self.conn.execute(
+            "INSERT INTO repos (project, path) VALUES (?1, ?2)",
+            (&repo.project, &repo.path.display().to_string()),
+        )?;
+
+        Ok(())
+    }
+
+    pub fn get_repo_with_id(&self, id: u64) -> Result<Option<Repo>, Error> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, project, path FROM repos WHERE id=?1")?;
+
+        let mut repos: Vec<_> = stmt
+            .query_map([id], |row| {
+                let path: String = row.get(2)?;
+                Ok(Repo {
+                    id: row.get(0)?,
+                    project: row.get(1)?,
+                    path: PathBuf::from(path),
+                })
+            })?
+            .filter_map(|a| a.ok())
+            .collect();
+
+        if repos.len() == 1 {
+            return Ok(Some(repos.remove(0)));
+        } else {
+            return Ok(None);
+        }
+    }
+
+    pub fn get_repo_with_path(&self, path: &Path) -> Result<Option<Repo>, Error> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, project, path FROM repos WHERE path=?1")?;
+
+        let mut repos: Vec<_> = stmt
+            .query_map([path.display().to_string()], |row| {
+                let path: String = row.get(2)?;
+                Ok(Repo {
+                    id: row.get(0)?,
+                    project: row.get(1)?,
+                    path: PathBuf::from(path),
+                })
+            })?
+            .filter_map(|a| a.ok())
+            .collect();
+
+        if repos.len() == 1 {
+            return Ok(Some(repos.remove(0)));
+        } else {
+            return Ok(None);
+        }
+    }
+
+    pub fn delete_repo(&self, repo: Repo) -> Result<(), Error> {
+        self.conn
+            .execute("DELETE FROM repos WHERE id=?1", &[&repo.id.to_string()])?;
+
+        Ok(())
+    }
+
+    pub fn update_repo(&self, repo: &Repo) -> Result<(), Error> {
+        self.conn.execute(
+            "UPDATE repos SET project=?2, path=?3 WHERE id=?1",
+            (&repo.id, &repo.project, &repo.path.display().to_string()),
+        )?;
+
+        Ok(())
+    }
+
+    pub fn get_repos(&self, project: &Project) -> Result<Vec<Repo>, Error> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, project, path FROM activities WHERE project=?1")?;
+
+        let repos: Vec<_> = stmt
+            .query_map([project.id], |row| {
+                let path: String = row.get(2)?;
+                Ok(Repo {
+                    id: row.get(0)?,
+                    project: row.get(1)?,
+                    path: PathBuf::from(path),
+                })
+            })?
+            .filter_map(|a| a.ok())
+            .collect();
+
+        Ok(repos)
+    }
+}
+
 impl DataStore {
     fn init_tables(&self) -> Result<(), Error> {
         project::init_table(&self.conn)?;
         activity::init_table(&self.conn)?;
         activitytype::init_table(&self.conn)?;
+        repo::init_table(&self.conn)?;
 
         Ok(())
     }

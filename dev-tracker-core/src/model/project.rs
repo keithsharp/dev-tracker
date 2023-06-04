@@ -1,5 +1,4 @@
 use std::fmt::Display;
-use std::path::{Path, PathBuf};
 
 use rusqlite::Connection;
 
@@ -9,7 +8,6 @@ use crate::Error;
 pub struct Project {
     pub(crate) id: u64,
     pub(crate) name: String,
-    pub(crate) path: PathBuf,
 }
 
 impl Display for Project {
@@ -19,8 +17,8 @@ impl Display for Project {
 }
 
 impl Project {
-    pub fn new(name: String, path: PathBuf) -> Self {
-        Self { id: 0, name, path }
+    pub fn new(name: String) -> Self {
+        Self { id: 0, name }
     }
 
     pub fn id(&self) -> u64 {
@@ -34,22 +32,13 @@ impl Project {
     pub fn set_name(&mut self, name: String) {
         self.name = name;
     }
-
-    pub fn path(&self) -> &Path {
-        &self.path
-    }
-
-    pub fn set_path(&mut self, path: PathBuf) {
-        self.path = path;
-    }
 }
 
 pub(crate) fn init_table(conn: &Connection) -> Result<(), Error> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS projects (
             id          INTEGER PRIMARY KEY,
-            name        TEXT NOT NULL,
-            path        TEXT NOT NULL
+            name        TEXT NOT NULL
         )",
         (),
     )?;
