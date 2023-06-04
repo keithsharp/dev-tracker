@@ -1,11 +1,11 @@
-pub mod activity;
-pub use activity::*;
+pub(crate) mod activity;
+pub(crate) use activity::*;
 
-pub mod activitytype;
-pub use activitytype::*;
+pub(crate) mod activitytype;
+pub(crate) use activitytype::*;
 
-pub mod project;
-pub use project::*;
+pub(crate) mod project;
+pub(crate) use project::*;
 
-pub mod repo;
-pub use repo::*;
+pub(crate) mod repo;
+pub(crate) use repo::*;
