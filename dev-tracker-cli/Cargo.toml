@@ -1,5 +1,5 @@
 [package]
-name = "dt-cli"
+name = "dev-tracker-cli"
 description = "Command line for tracking projects and activities"
 
 authors.workspace = true

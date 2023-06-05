@@ -1,9 +1,9 @@
 [workspace]
 members = [
 	"dev-tracker-core",
-	"dt-cli",
+	"dev-tracker-cli",
 ]
-default-members = ["dt-cli"]
+default-members = ["dev-tracker-cli"]
 
 [workspace.package]
 authors = ["Keith Sharp <kms@passback.co.uk"]
