@@ -225,7 +225,7 @@ impl Activity {
 
     pub(crate) fn get_all(conn: &Connection) -> Result<Vec<Self>, Error> {
         let mut stmt =
-            conn.prepare("SELECT id, project, atype, description, start FROM activities")?;
+            conn.prepare("SELECT id, project, atype, description, start, end FROM activities")?;
 
         let activities: Vec<_> = stmt
             .query_map([], |row| {

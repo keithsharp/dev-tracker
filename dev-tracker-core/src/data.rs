@@ -286,7 +286,7 @@ impl DataStore {
     }
 
     pub fn get_activities(&self, project: &Project) -> Result<Vec<Activity>, Error> {
-        let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
+        let Some(_project) = Project::get_with_id(project.id, &self.conn)? else {
             return Err(Error::ProjectNotFound(project.id.to_string()));
         };
 
