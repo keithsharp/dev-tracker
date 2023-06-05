@@ -68,7 +68,12 @@ pub struct AddActivityTypeArgs {
 
 #[derive(Subcommand)]
 pub enum CancelCommand {
-    Activity,
+    Activity(CancelActivityTypeArgs),
+}
+
+#[derive(Args)]
+pub struct CancelActivityTypeArgs {
+    pub name: String,
 }
 
 #[derive(Subcommand)]
@@ -161,7 +166,12 @@ pub struct StartActivityArgs {
 
 #[derive(Subcommand)]
 pub enum StopCommand {
-    Activity,
+    Activity(StopActivityArgs),
+}
+
+#[derive(Args)]
+pub struct StopActivityArgs {
+    pub project: String,
 }
 
 #[derive(Subcommand)]

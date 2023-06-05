@@ -20,7 +20,7 @@ pub(crate) fn init_table(conn: &Connection) -> Result<(), crate::Error> {
 }
 
 #[derive(Debug)]
-pub(crate) struct Repo {
+pub struct Repo {
     pub(crate) id: u64,
     pub(crate) project: u64,
     pub(crate) path: PathBuf,
@@ -33,7 +33,7 @@ impl Display for Repo {
 }
 
 impl Repo {
-    pub(crate) fn new(path: PathBuf, project: u64) -> Self {
+    pub fn new(path: PathBuf, project: u64) -> Self {
         Self {
             id: 0,
             project,
@@ -41,23 +41,23 @@ impl Repo {
         }
     }
 
-    pub(crate) fn id(&self) -> u64 {
+    pub fn id(&self) -> u64 {
         self.id
     }
 
-    pub(crate) fn project(&self) -> u64 {
+    pub fn project(&self) -> u64 {
         self.project
     }
 
-    pub(crate) fn set_project(&mut self, project: u64) {
+    pub fn set_project(&mut self, project: u64) {
         self.project = project;
     }
 
-    pub(crate) fn path(&self) -> &Path {
+    pub fn path(&self) -> &Path {
         &self.path
     }
 
-    pub(crate) fn set_path(&mut self, path: PathBuf) {
+    pub fn set_path(&mut self, path: PathBuf) {
         self.path = path;
     }
 }
@@ -71,7 +71,7 @@ impl Repo {
         Ok(())
     }
 
-    pub(crate) fn read(id: u64, conn: &Connection) -> Result<Self, Error> {
+    pub(crate) fn get_with_id(id: u64, conn: &Connection) -> Result<Option<Self>, Error> {
         let mut stmt = conn.prepare("SELECT id, project, path FROM repos WHERE id=?1")?;
         let mut repos: Vec<Repo> = stmt
             .query_map([&id], |row| {
@@ -86,10 +86,44 @@ impl Repo {
             .collect();
 
         if repos.len() == 1 {
-            return Ok(repos.remove(0));
+            return Ok(Some(repos.remove(0)));
         } else {
-            return Err(Error::RepoNotFound(id));
+            return Ok(None);
         }
+    }
+
+    pub(crate) fn get_with_path(path: &Path, conn: &Connection) -> Result<Vec<Self>, Error> {
+        let mut stmt = conn.prepare("SELECT id, project, path FROM repos WHERE path=?1")?;
+        let repos: Vec<Repo> = stmt
+            .query_map([&path.display().to_string()], |row| {
+                let path: String = row.get(2)?;
+                Ok(Repo {
+                    id: row.get(0)?,
+                    project: row.get(1)?,
+                    path: PathBuf::from(path),
+                })
+            })?
+            .filter_map(|p| p.ok())
+            .collect();
+
+        Ok(repos)
+    }
+
+    pub(crate) fn get_all(conn: &Connection) -> Result<Vec<Self>, Error> {
+        let mut stmt = conn.prepare("SELECT id, project, path FROM repos")?;
+        let repos: Vec<Repo> = stmt
+            .query_map([], |row| {
+                let path: String = row.get(2)?;
+                Ok(Repo {
+                    id: row.get(0)?,
+                    project: row.get(1)?,
+                    path: PathBuf::from(path),
+                })
+            })?
+            .filter_map(|p| p.ok())
+            .collect();
+
+        Ok(repos)
     }
 
     pub(crate) fn update(&self, conn: &Connection) -> Result<(), Error> {

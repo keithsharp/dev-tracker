@@ -2,54 +2,55 @@ use std::process;
 
 use chrono::{DateTime, Local};
 
-use dev_tracker_core::model::{Activity, Project};
-use dev_tracker_core::{data::DataStore, model::ActivityType};
+use dev_tracker_core::data::DataStore;
 
 use crate::cli::{
-    AddActivityTypeArgs, AddProjectArgs, DeleteActivityArgs, DeleteActivityTypeArgs,
-    DeleteProjectArgs, DescribeActivityArgs, DescribeProjectArgs, ListActivityArgs,
-    ListActivityTypeArgs, RenameActivityTypeArgs, RenameProjectArgs, StartActivityArgs,
-    UpdateActivityActivityTypeArgs, UpdateActivityDescriptionArgs, UpdateActivityEndArgs,
-    UpdateActivityProjectArgs, UpdateActivityTypeArgs,
+    AddActivityTypeArgs, AddProjectArgs, CancelActivityTypeArgs, DeleteActivityArgs,
+    DeleteActivityTypeArgs, DeleteProjectArgs, DescribeActivityArgs, DescribeProjectArgs,
+    ListActivityArgs, ListActivityTypeArgs, RenameActivityTypeArgs, RenameProjectArgs,
+    StartActivityArgs, StopActivityArgs, UpdateActivityActivityTypeArgs,
+    UpdateActivityDescriptionArgs, UpdateActivityEndArgs, UpdateActivityProjectArgs,
+    UpdateActivityTypeArgs,
 };
 
 pub fn add_project(args: AddProjectArgs, ds: &DataStore) -> anyhow::Result<()> {
-    match ds.get_project_with_name(&args.name)? {
-        Some(_) => {
-            eprintln!("Add failed, project already exists: {}", args.name);
-            process::exit(1);
-        }
-        None => {
-            let project = Project::new(args.name);
-            ds.add_project(&project)?;
-        }
-    }
+    ds.create_project(&args.name)?;
 
     Ok(())
 }
 
 pub fn add_activitytype(args: AddActivityTypeArgs, ds: &DataStore) -> anyhow::Result<()> {
-    match ds.get_activitytype_with_name(&args.name)? {
-        Some(_) => {
-            eprintln!("Add failed, activity type already exists: {}", args.name);
-            process::exit(1);
-        }
-        None => {
-            let at = ActivityType::new(args.name, args.description);
-            ds.add_activitytype(at)?;
-        }
-    }
+    ds.create_activitytype(&args.name, args.description)?;
 
     Ok(())
 }
 
-pub fn cancel_actvity(ds: &DataStore) -> anyhow::Result<()> {
-    let activity = match ds.get_running_activity()? {
-        Some(activity) => activity,
-        None => {
-            eprintln!("Cancel failed, no activity running");
-            process::exit(1);
-        }
+pub fn cancel_actvity(args: CancelActivityTypeArgs, ds: &DataStore) -> anyhow::Result<()> {
+    let Some(project) = ds.get_project(&args.name)? else {
+        eprintln!("Cancel failed, no such project: {}", args.name);
+        process::exit(1);
+    };
+
+    ds.cancel_running_actvity(&project)?;
+
+    Ok(())
+}
+
+pub fn delete_project(args: DeleteProjectArgs, ds: &DataStore) -> anyhow::Result<()> {
+    let Some(project) = ds.get_project(&args.name)? else {
+        eprintln!("Delete failed, no such project: {}", args.name);
+        process::exit(1);
+    };
+
+    ds.delete_project(project)?;
+
+    Ok(())
+}
+
+pub fn delete_activity(args: DeleteActivityArgs, ds: &DataStore) -> anyhow::Result<()> {
+    let Some(activity) = ds.get_activity_with_id(args.id)? else {
+        eprintln!("Delete failed, no such activity: {}", args.id);
+        process::exit(1);
     };
 
     ds.delete_activity(activity)?;
@@ -57,86 +58,50 @@ pub fn cancel_actvity(ds: &DataStore) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn delete_project(args: DeleteProjectArgs, ds: &DataStore) -> anyhow::Result<()> {
-    match ds.get_project_with_name(&args.name)? {
-        Some(project) => ds.delete_project(project)?,
-        None => {
-            eprintln!("Delete failed, no such project: {}", args.name);
-            process::exit(1);
-        }
-    }
-
-    Ok(())
-}
-
-pub fn delete_activity(args: DeleteActivityArgs, ds: &DataStore) -> anyhow::Result<()> {
-    match ds.get_activity_with_id(args.id)? {
-        Some(activity) => ds.delete_activity(activity)?,
-        None => {
-            eprintln!("Delete failed, no such activity: {}", args.id);
-            process::exit(1);
-        }
-    }
-
-    Ok(())
-}
-
 pub fn delete_activitytype(args: DeleteActivityTypeArgs, ds: &DataStore) -> anyhow::Result<()> {
-    match ds.get_activitytype_with_name(&args.name)? {
-        Some(at) => ds.delete_activitytype(at)?,
-        None => {
-            eprintln!("Delete failed, no such activity type: {}", args.name);
-            process::exit(1);
-        }
-    }
+    let Some(at) = ds.get_activitytype(&args.name)? else {
+        eprintln!("Delete failed, no such activity type: {}", args.name);
+        process::exit(1);
+    };
+
+    ds.delete_activitytype(at)?;
 
     Ok(())
 }
 
 pub fn describe_project(args: DescribeProjectArgs, ds: &DataStore) -> anyhow::Result<()> {
-    match ds.get_project_with_name(&args.name)? {
-        Some(project) => {
-            println!("Project name: {}", project.name());
-            let repos = ds.get_repos(&project)?;
-            for repo in repos {
-                println!("Repository path: {}", repo.path().display());
-            }
-        }
-        None => {
-            eprintln!("Describe failed, no such project: {}", args.name);
-            process::exit(1);
-        }
+    let Some(project) = ds.get_project(&args.name)? else {
+        eprintln!("Describe failed, no such project: {}", args.name);
+        process::exit(1);
+    };
+
+    println!("Project name: {}", project.name());
+
+    let repos = ds.get_repos(&project)?;
+    for repo in repos {
+        println!("Repository path: {}", repo.path().display());
     }
 
     Ok(())
 }
 
 pub fn describe_activity(args: DescribeActivityArgs, ds: &DataStore) -> anyhow::Result<()> {
-    let activity = match ds.get_activity_with_id(args.id)? {
-        Some(activity) => activity,
-        None => {
-            eprintln!("Describe failed, no such activity: {}", args.id);
-            process::exit(1);
-        }
+    let Some(activity) = ds.get_activity_with_id(args.id)? else {
+        eprintln!("Describe failed, no such activity: {}", args.id);
+        process::exit(1);
     };
 
-    let at = match ds.get_activitytype_with_id(activity.atype())? {
-        Some(at) => at,
-        None => {
-            eprintln!(
-                "Describe failed, no activity type for activity: {}",
-                args.id
-            );
-            process::exit(1);
-        }
+    let Some(at) = ds.get_activitytype_with_id(activity.atype())? else {
+        eprintln!(
+            "Describe failed, no activity type for activity: {}",
+            args.id
+        );
+        process::exit(1);
     };
 
-    let project = match ds.get_project_with_id(activity.project())? {
-        Some(project) => project,
-        None => {
-            eprintln!("Describe failed, no project for activity: {}", args.id);
-            process::exit(1);
-        }
+    let Some(project) = ds.get_project_with_id(activity.project())? else {
+        eprintln!("Describe failed, no project for activity: {}", args.id);
+        process::exit(1);
     };
 
     println!("Project: {}", project.name());
@@ -179,12 +144,9 @@ pub fn list_projects(ds: &DataStore) -> anyhow::Result<()> {
 }
 
 pub fn list_activities(args: ListActivityArgs, ds: &DataStore) -> anyhow::Result<()> {
-    let project = match ds.get_project_with_name(&args.project)? {
-        Some(project) => project,
-        None => {
-            eprintln!("List activities failed, no such project: {}", args.project);
-            process::exit(1);
-        }
+    let Some(project) = ds.get_project(&args.project)? else {
+        eprintln!("List activities failed, no such project: {}", args.project);
+        process::exit(1);
     };
 
     let activities = ds.get_activities(&project)?;
@@ -222,74 +184,67 @@ pub fn list_activitytypes(args: ListActivityTypeArgs, ds: &DataStore) -> anyhow:
 }
 
 pub fn rename_project(args: RenameProjectArgs, ds: &DataStore) -> anyhow::Result<()> {
-    match ds.get_project_with_name(&args.old_name)? {
-        Some(mut project) => {
-            project.set_name(args.new_name);
-            ds.update_project(&project)?;
-        }
-        None => {
-            eprintln!("Rename failed, no such project: {}", args.old_name);
-            process::exit(1);
-        }
-    }
+    let Some(mut project) = ds.get_project(&args.old_name)? else {
+        eprintln!("Rename failed, no such project: {}", args.old_name);
+        process::exit(1);
+    };
+
+    project.set_name(args.new_name);
+    ds.update_project(&project)?;
 
     Ok(())
 }
 
 pub fn rename_activitytype(args: RenameActivityTypeArgs, ds: &DataStore) -> anyhow::Result<()> {
-    match ds.get_activitytype_with_name(&args.old_name)? {
-        Some(mut at) => {
-            at.set_name(args.new_name);
-            ds.update_activitytype(&at)?;
-        }
-        None => {
-            eprintln!("Rename failed, no such activity type: {}", args.old_name);
-            process::exit(1);
-        }
-    }
+    let Some(mut at) = ds.get_activitytype(&args.old_name)? else {
+        eprintln!("Rename failed, no such activity type: {}", args.old_name);
+        process::exit(1);
+    };
+
+    at.set_name(args.new_name);
+    ds.update_activitytype(&at)?;
 
     Ok(())
 }
 
 pub fn start_activity(args: StartActivityArgs, ds: &DataStore) -> anyhow::Result<()> {
-    if ds.get_running_activity()?.is_some() {
+    let Some(project) = ds.get_project(&args.project)? else {
+        eprintln!("Start activity failed, no such project: {}", args.project);
+        process::exit(1);
+    };
+
+    if ds.get_running_activity(&project)?.is_some() {
         eprintln!(
             "Start activity failed, an activity is aready running for project: {}",
-            args.project
+            project.name()
         );
         process::exit(1);
     }
 
-    let project = match ds.get_project_with_name(&args.project)? {
-        Some(project) => project,
-        None => {
-            eprintln!("Start activity failed, no such project: {}", args.project);
-            process::exit(1);
-        }
+    let Some(at) = ds.get_activitytype(&args.activity_type)? else {
+        eprintln!(
+            "Start activity failed, no such activity type: {}",
+            args.activity_type
+        );
+        process::exit(1);
     };
 
-    let at = match ds.get_activitytype_with_name(&args.activity_type)? {
-        Some(at) => at,
-        None => {
-            eprintln!(
-                "Start activity failed, no such activity type: {}",
-                args.activity_type
-            );
-            process::exit(1);
-        }
-    };
-
-    let activity = Activity::new(&project, at, args.description);
-    ds.start_activity(activity)?;
+    ds.start_activity(&project, &at, args.description)?;
 
     Ok(())
 }
 
-pub fn stop_activity(ds: &DataStore) -> anyhow::Result<()> {
-    let Some(_activity) = ds.stop_running_activity()? else {
+pub fn stop_activity(args: StopActivityArgs, ds: &DataStore) -> anyhow::Result<()> {
+    let Some(project) = ds.get_project(&args.project)? else {
+        eprintln!("Stop activity failed, no such project: {}", args.project);
+        process::exit(1);
+    };
+
+    if ds.stop_running_activity(&project)?.is_none() {
         eprintln!("Stop activity failed, no activity running");
         process::exit(1)
-    };
+    }
+
     Ok(())
 }
 
@@ -297,12 +252,9 @@ pub fn update_activity_description(
     args: UpdateActivityDescriptionArgs,
     ds: &DataStore,
 ) -> anyhow::Result<()> {
-    let mut activity = match ds.get_activity_with_id(args.id)? {
-        Some(activity) => activity,
-        None => {
-            eprintln!("Update failed, no such actvity: {}", args.id);
-            process::exit(1);
-        }
+    let Some(mut activity) = ds.get_activity_with_id(args.id)? else {
+        eprintln!("Update failed, no such actvity: {}", args.id);
+        process::exit(1);
     };
 
     activity.set_description(args.description);
@@ -315,20 +267,14 @@ pub fn update_activity_atype(
     args: UpdateActivityActivityTypeArgs,
     ds: &DataStore,
 ) -> anyhow::Result<()> {
-    let mut activity = match ds.get_activity_with_id(args.id)? {
-        Some(activity) => activity,
-        None => {
-            eprintln!("Update failed, no such actvity: {}", args.id);
-            process::exit(1);
-        }
+    let Some(mut activity) = ds.get_activity_with_id(args.id)? else {
+        eprintln!("Update failed, no such actvity: {}", args.id);
+        process::exit(1);
     };
 
-    let at = match ds.get_activitytype_with_name(&args.atype)? {
-        Some(at) => at,
-        None => {
-            eprintln!("Update failed, no such activity type: {}", args.atype);
-            process::exit(1);
-        }
+    let Some(at) = ds.get_activitytype(&args.atype)? else {
+        eprintln!("Update failed, no such activity type: {}", args.atype);
+        process::exit(1);
     };
 
     activity.set_atype(at.id());
@@ -338,12 +284,9 @@ pub fn update_activity_atype(
 }
 
 pub fn update_activity_end(args: UpdateActivityEndArgs, ds: &DataStore) -> anyhow::Result<()> {
-    let mut activity = match ds.get_activity_with_id(args.id)? {
-        Some(activity) => activity,
-        None => {
-            eprintln!("Update failed, no such actvity: {}", args.id);
-            process::exit(1);
-        }
+    let Some(mut activity) = ds.get_activity_with_id(args.id)? else {
+        eprintln!("Update failed, no such actvity: {}", args.id);
+        process::exit(1);
     };
 
     if args.end < activity.start_time() {
@@ -366,20 +309,14 @@ pub fn update_activity_project(
     args: UpdateActivityProjectArgs,
     ds: &DataStore,
 ) -> anyhow::Result<()> {
-    let mut activity = match ds.get_activity_with_id(args.id)? {
-        Some(activity) => activity,
-        None => {
-            eprintln!("Update failed, no such actvity: {}", args.id);
-            process::exit(1);
-        }
+    let Some(mut activity) = ds.get_activity_with_id(args.id)? else {
+        eprintln!("Update failed, no such actvity: {}", args.id);
+        process::exit(1);
     };
 
-    let project = match ds.get_project_with_name(&args.project)? {
-        Some(project) => project,
-        None => {
-            eprintln!("Update failed, no such project: {}", args.project);
-            process::exit(1);
-        }
+    let Some(project) = ds.get_project(&args.project)? else {
+        eprintln!("Update failed, no such project: {}", args.project);
+        process::exit(1);
     };
 
     activity.set_project(project.id());
@@ -389,16 +326,13 @@ pub fn update_activity_project(
 }
 
 pub fn update_activitytype(args: UpdateActivityTypeArgs, ds: &DataStore) -> anyhow::Result<()> {
-    match ds.get_activitytype_with_name(&args.name)? {
-        Some(mut at) => {
-            at.set_description(args.description);
-            ds.update_activitytype(&at)?;
-        }
-        None => {
-            eprintln!("Update failed, no such activity type: {}", args.name);
+    let Some(mut at) = ds.get_activitytype(&args.name)? else {
+        eprintln!("Update failed, no such activity type: {}", args.name);
             process::exit(1);
-        }
-    }
+    };
+
+    at.set_description(args.description);
+    ds.update_activitytype(&at)?;
 
     Ok(())
 }

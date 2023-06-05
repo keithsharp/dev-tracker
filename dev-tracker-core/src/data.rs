@@ -32,48 +32,70 @@ impl DataStore {
         let ds = Self { conn };
         Ok(ds)
     }
+
+    fn init_tables(&self) -> Result<(), Error> {
+        project::init_table(&self.conn)?;
+        activity::init_table(&self.conn)?;
+        activitytype::init_table(&self.conn)?;
+        repo::init_table(&self.conn)?;
+
+        Ok(())
+    }
 }
 
 // Project
 impl DataStore {
-    pub fn add_project(&self, project: &Project) -> Result<(), Error> {
-        self.conn
-            .execute("INSERT INTO projects (name) VALUES (?1)", &[&project.name])?;
+    pub fn create_project(&self, name: &str) -> Result<Project, Error> {
+        if !Project::get_with_name(name, &self.conn)?.is_empty() {
+            return Err(Error::ProjectAlreadyExists(name.to_string()));
+        }
 
-        Ok(())
+        let project = Project::new(name.to_string());
+        project.create(&self.conn)?;
+
+        Ok(project)
     }
 
     pub fn delete_project(&self, project: Project) -> Result<(), Error> {
-        self.conn.execute(
-            "DELETE FROM projects WHERE id=?1",
-            &[&project.id.to_string()],
-        )?;
+        let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
+            return Err(Error::ProjectNotFound(project.id.to_string()));
+        };
+
+        let activities: Vec<_> = Activity::get_all(&self.conn)?
+            .into_iter()
+            .filter(|a| a.project == project.id)
+            .collect();
+
+        for activity in activities {
+            activity.delete(&self.conn)?;
+        }
+
+        let repos: Vec<_> = Repo::get_all(&self.conn)?
+            .into_iter()
+            .filter(|r| r.project == project.id)
+            .collect();
+
+        for repo in repos {
+            repo.delete(&self.conn)?;
+        }
+
+        project.delete(&self.conn)?;
 
         Ok(())
     }
 
     pub fn update_project(&self, project: &Project) -> Result<(), Error> {
-        self.conn.execute(
-            "UPDATE projects SET name=?2 WHERE id=?1",
-            (&project.id, &project.name),
-        )?;
+        let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
+            return Err(Error::ProjectNotFound(project.id.to_string()));
+        };
+
+        project.update(&self.conn)?;
 
         Ok(())
     }
 
-    pub fn get_project_with_id(&self, id: u64) -> Result<Option<Project>, Error> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, name FROM projects WHERE id=?1")?;
-        let mut projects: Vec<Project> = stmt
-            .query_map([&id.to_string()], |row| {
-                Ok(Project {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                })
-            })?
-            .filter_map(|p| p.ok())
-            .collect();
+    pub fn get_project(&self, name: &str) -> Result<Option<Project>, Error> {
+        let mut projects = Project::get_with_name(name, &self.conn)?;
 
         if projects.len() == 1 {
             return Ok(Some(projects.remove(0)));
@@ -82,38 +104,13 @@ impl DataStore {
         }
     }
 
-    pub fn get_project_with_name(&self, name: &str) -> Result<Option<Project>, Error> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, name FROM projects WHERE name=?1")?;
-        let mut projects: Vec<Project> = stmt
-            .query_map([name], |row| {
-                Ok(Project {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                })
-            })?
-            .filter_map(|p| p.ok())
-            .collect();
-
-        if projects.len() == 1 {
-            return Ok(Some(projects.remove(0)));
-        } else {
-            return Ok(None);
-        }
+    pub fn get_project_with_id(&self, id: u64) -> Result<Option<Project>, Error> {
+        let project = Project::get_with_id(id, &self.conn)?;
+        Ok(project)
     }
 
     pub fn get_projects(&self) -> Result<Vec<Project>, Error> {
-        let mut stmt = self.conn.prepare("SELECT id, name FROM projects")?;
-        let projects: Vec<_> = stmt
-            .query_map([], |row| {
-                Ok(Project {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                })
-            })?
-            .filter_map(|p| p.ok())
-            .collect();
+        let projects = Project::get_all(&self.conn)?;
 
         Ok(projects)
     }
@@ -121,49 +118,51 @@ impl DataStore {
 
 // ActivityType
 impl DataStore {
-    pub fn add_activitytype(&self, at: ActivityType) -> Result<(), Error> {
-        self.conn.execute(
-            "INSERT INTO activitytypes (name, description) VALUES (?1, ?2)",
-            (&at.name, &at.description),
-        )?;
+    pub fn create_activitytype(
+        &self,
+        name: &str,
+        description: Option<String>,
+    ) -> Result<ActivityType, Error> {
+        if !ActivityType::get_with_name(name, &self.conn)?.is_empty() {
+            return Err(Error::ActivityTypeAlreadyExists(name.to_string()));
+        }
 
-        Ok(())
+        let at = ActivityType::new(name.to_string(), description);
+        at.create(&self.conn)?;
+
+        Ok(at)
     }
 
-    // TODO: should this check for activities using this type before
-    // deleting, or should that be done by the application?
     pub fn delete_activitytype(&self, at: ActivityType) -> Result<(), Error> {
-        self.conn.execute(
-            "DELETE FROM activitytypes WHERE id=?1",
-            &[&at.id.to_string()],
-        )?;
+        let Some(at) = ActivityType::get_with_id(at.id, &self.conn)? else {
+            return Err(Error::ActivityTypeNotFound(at.id.to_string()));
+        };
+
+        let activities: Vec<_> = Activity::get_all(&self.conn)?
+            .into_iter()
+            .filter(|a| a.atype == at.id)
+            .collect();
+        if activities.len() > 0 {
+            return Err(Error::ActivityTypeInUse(at.id.to_string()));
+        }
+
+        at.delete(&self.conn)?;
 
         Ok(())
     }
 
     pub fn update_activitytype(&self, at: &ActivityType) -> Result<(), Error> {
-        self.conn.execute(
-            "UPDATE activitytypes SET name=?2, description=?3 WHERE id=?1",
-            (&at.id, &at.name, &at.description),
-        )?;
+        let Some(at) = ActivityType::get_with_id(at.id, &self.conn)? else {
+            return Err(Error::ActivityTypeNotFound(at.id.to_string()));
+        };
+
+        at.update(&self.conn)?;
 
         Ok(())
     }
 
-    pub fn get_activitytype_with_id(&self, id: u64) -> Result<Option<ActivityType>, Error> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, name, description FROM activitytypes WHERE id=?1")?;
-        let mut ats: Vec<ActivityType> = stmt
-            .query_map([&id.to_string()], |row| {
-                Ok(ActivityType {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    description: row.get(2)?,
-                })
-            })?
-            .filter_map(|p| p.ok())
-            .collect();
+    pub fn get_activitytype(&self, name: &str) -> Result<Option<ActivityType>, Error> {
+        let mut ats = ActivityType::get_with_name(name, &self.conn)?;
 
         if ats.len() == 1 {
             return Ok(Some(ats.remove(0)));
@@ -172,42 +171,13 @@ impl DataStore {
         }
     }
 
-    pub fn get_activitytype_with_name(&self, name: &str) -> Result<Option<ActivityType>, Error> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, name, description FROM activitytypes WHERE name=?1")?;
-        let mut ats: Vec<ActivityType> = stmt
-            .query_map([name], |row| {
-                Ok(ActivityType {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    description: row.get(2)?,
-                })
-            })?
-            .filter_map(|p| p.ok())
-            .collect();
-
-        if ats.len() == 1 {
-            return Ok(Some(ats.remove(0)));
-        } else {
-            return Ok(None);
-        }
+    pub fn get_activitytype_with_id(&self, id: u64) -> Result<Option<ActivityType>, Error> {
+        let at = ActivityType::get_with_id(id, &self.conn)?;
+        Ok(at)
     }
 
     pub fn get_activitytypes(&self) -> Result<Vec<ActivityType>, Error> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, name, description FROM activitytypes")?;
-        let ats: Vec<_> = stmt
-            .query_map([], |row| {
-                Ok(ActivityType {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    description: row.get(2)?,
-                })
-            })?
-            .filter_map(|p| p.ok())
-            .collect();
+        let ats = ActivityType::get_all(&self.conn)?;
 
         Ok(ats)
     }
@@ -215,118 +185,114 @@ impl DataStore {
 
 // Activity
 impl DataStore {
-    pub fn get_activity_with_id(&self, id: u64) -> Result<Option<Activity>, Error> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, project, atype, description, start, end FROM activities WHERE id=?1",
-        )?;
+    pub fn start_activity(
+        &self,
+        project: &Project,
+        at: &ActivityType,
+        description: Option<String>,
+    ) -> Result<Activity, Error> {
+        let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
+            return Err(Error::ProjectNotFound(project.id.to_string()));
+        };
 
-        let mut activities: Vec<_> = stmt
-            .query_map([id], |row| {
-                Ok(Activity {
-                    id: row.get(0)?,
-                    project: row.get(1)?,
-                    atype: row.get(2)?,
-                    description: row.get(3)?,
-                    start: row.get(4)?,
-                    end: row.get(5)?,
-                })
-            })?
-            .filter_map(|a| a.ok())
-            .collect();
-
-        if activities.len() == 1 {
-            return Ok(Some(activities.remove(0)));
-        } else {
-            return Ok(None);
+        if self.get_running_activity(&project)?.is_some() {
+            return Err(Error::RunningActivityAlreadyExists(project.id.to_string()));
         }
+
+        let Some(at) = ActivityType::get_with_id(at.id, &self.conn)? else {
+            return Err(Error::ActivityTypeNotFound(at.id.to_string()));
+        };
+
+        let activity = Activity::new(project.id, at.id, description);
+        activity.create(&self.conn)?;
+
+        Ok(activity)
     }
 
-    pub fn get_running_activity(&self) -> Result<Option<Activity>, Error> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, project, atype, description, start FROM activities WHERE end IS NULL",
-        )?;
+    pub fn cancel_running_actvity(&self, project: &Project) -> Result<(), Error> {
+        let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
+            return Err(Error::ProjectNotFound(project.id.to_string()));
+        };
 
-        let mut activities: Vec<_> = stmt
-            .query_map([], |row| {
-                Ok(Activity {
-                    id: row.get(0)?,
-                    project: row.get(1)?,
-                    atype: row.get(2)?,
-                    description: row.get(3)?,
-                    start: row.get(4)?,
-                    end: None,
-                })
-            })?
-            .filter_map(|a| a.ok())
-            .collect();
+        let Some(activity) = self.stop_running_activity(&project)? else {
+            return Ok(());
+        };
 
-        if activities.len() == 1 {
-            return Ok(Some(activities.remove(0)));
-        } else {
-            return Ok(None);
-        }
-    }
-
-    pub fn start_activity(&self, activity: Activity) -> Result<(), Error> {
-        self.conn.execute(
-            "INSERT INTO activities (project, atype, description, start) VALUES (?1, ?2, ?3, ?4)",
-            (
-                &activity.project,
-                &activity.atype,
-                &activity.description,
-                &activity.start,
-            ),
-        )?;
+        activity.delete(&self.conn)?;
 
         Ok(())
     }
 
-    pub fn stop_running_activity(&self) -> Result<Option<Activity>, Error> {
-        let Some(mut activity) = self.get_running_activity()? else {
-            return Ok(None);
+    pub fn stop_running_activity(&self, project: &Project) -> Result<Option<Activity>, Error> {
+        let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
+            return Err(Error::ProjectNotFound(project.id.to_string()));
         };
 
-        activity.end = Some(Utc::now());
-        self.update_activity(&activity)?;
+        let mut activities: Vec<_> = Activity::get_if_running(&self.conn)?
+            .into_iter()
+            .filter(|a| a.project == project.id)
+            .collect();
 
-        Ok(Some(activity))
+        if activities.len() == 1 {
+            let mut activity = activities.remove(0);
+            activity.end = Some(Utc::now());
+            activity.update(&self.conn)?;
+            return Ok(Some(activity));
+        }
+
+        Ok(None)
+    }
+
+    pub fn get_running_activity(&self, project: &Project) -> Result<Option<Activity>, Error> {
+        let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
+            return Err(Error::ProjectNotFound(project.id.to_string()));
+        };
+
+        let mut activities: Vec<_> = Activity::get_if_running(&self.conn)?
+            .into_iter()
+            .filter(|a| a.project == project.id)
+            .collect();
+
+        if activities.len() == 1 {
+            return Ok(Some(activities.remove(0)));
+        } else {
+            return Ok(None);
+        }
+    }
+
+    pub fn get_activity_with_id(&self, id: u64) -> Result<Option<Activity>, Error> {
+        let activity = Activity::get_with_id(id, &self.conn)?;
+        Ok(activity)
     }
 
     pub fn delete_activity(&self, activity: Activity) -> Result<(), Error> {
-        self.conn.execute(
-            "DELETE FROM activities WHERE id=?1",
-            &[&activity.id.to_string()],
-        )?;
+        let Some(activity) = Activity::get_with_id(activity.id, &self.conn)? else {
+            return Err(Error::ActivityNotFound(activity.id.to_string()));
+        };
+
+        activity.delete(&self.conn)?;
 
         Ok(())
     }
 
     pub fn update_activity(&self, activity: &Activity) -> Result<(), Error> {
-        self.conn.execute(
-            "UPDATE activities SET project=?2, atype=?3, description=?4, start=?5, end=?6 WHERE id=?1",
-            (&activity.id, &activity.project, &activity.atype, &activity.description, &activity.start, &activity.end),
-        )?;
+        let Some(activity) = Activity::get_with_id(activity.id, &self.conn)? else {
+            return Err(Error::ActivityNotFound(activity.id.to_string()));
+        };
+
+        activity.update(&self.conn)?;
 
         Ok(())
     }
 
-    // TODO: move this to the Project impl section above?
     pub fn get_activities(&self, project: &Project) -> Result<Vec<Activity>, Error> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, project, atype, description, start, end FROM activities WHERE project=?1",
-        )?;
-        let activities: Vec<_> = stmt
-            .query_map([project.id], |row| {
-                Ok(Activity {
-                    id: row.get(0)?,
-                    project: row.get(1)?,
-                    atype: row.get(2)?,
-                    description: row.get(3)?,
-                    start: row.get(4)?,
-                    end: row.get(5)?,
-                })
-            })?
-            .filter_map(|p| p.ok())
+        let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
+            return Err(Error::ProjectNotFound(project.id.to_string()));
+        };
+
+        let activities = Activity::get_all(&self.conn)?
+            .into_iter()
+            .filter(|a| a.project == project.id)
             .collect();
 
         Ok(activities)
@@ -335,55 +301,19 @@ impl DataStore {
 
 // Repos
 impl DataStore {
-    pub fn add_repo(&self, repo: &Repo) -> Result<(), Error> {
-        self.conn.execute(
-            "INSERT INTO repos (project, path) VALUES (?1, ?2)",
-            (&repo.project, &repo.path.display().to_string()),
-        )?;
+    pub fn create_repo(&self, project: &Project, path: &Path) -> Result<Repo, Error> {
+        let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
+            return Err(Error::ProjectNotFound(project.id.to_string()));
+        };
 
-        Ok(())
+        let repo = Repo::new(PathBuf::from(path), project.id);
+        repo.create(&self.conn)?;
+
+        Ok(repo)
     }
 
-    pub fn get_repo_with_id(&self, id: u64) -> Result<Option<Repo>, Error> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, project, path FROM repos WHERE id=?1")?;
-
-        let mut repos: Vec<_> = stmt
-            .query_map([id], |row| {
-                let path: String = row.get(2)?;
-                Ok(Repo {
-                    id: row.get(0)?,
-                    project: row.get(1)?,
-                    path: PathBuf::from(path),
-                })
-            })?
-            .filter_map(|a| a.ok())
-            .collect();
-
-        if repos.len() == 1 {
-            return Ok(Some(repos.remove(0)));
-        } else {
-            return Ok(None);
-        }
-    }
-
-    pub fn get_repo_with_path(&self, path: &Path) -> Result<Option<Repo>, Error> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, project, path FROM repos WHERE path=?1")?;
-
-        let mut repos: Vec<_> = stmt
-            .query_map([path.display().to_string()], |row| {
-                let path: String = row.get(2)?;
-                Ok(Repo {
-                    id: row.get(0)?,
-                    project: row.get(1)?,
-                    path: PathBuf::from(path),
-                })
-            })?
-            .filter_map(|a| a.ok())
-            .collect();
+    pub fn get_repo(&self, path: &Path) -> Result<Option<Repo>, Error> {
+        let mut repos = Repo::get_with_path(path, &self.conn)?;
 
         if repos.len() == 1 {
             return Ok(Some(repos.remove(0)));
@@ -393,49 +323,35 @@ impl DataStore {
     }
 
     pub fn delete_repo(&self, repo: Repo) -> Result<(), Error> {
-        self.conn
-            .execute("DELETE FROM repos WHERE id=?1", &[&repo.id.to_string()])?;
+        let Some(repo) = Repo::get_with_id(repo.id, &self.conn)? else {
+            return Err(Error::RepoNotFound(repo.id.to_string()));
+        };
+
+        repo.delete(&self.conn)?;
 
         Ok(())
     }
 
     pub fn update_repo(&self, repo: &Repo) -> Result<(), Error> {
-        self.conn.execute(
-            "UPDATE repos SET project=?2, path=?3 WHERE id=?1",
-            (&repo.id, &repo.project, &repo.path.display().to_string()),
-        )?;
+        let Some(repo) = Repo::get_with_id(repo.id, &self.conn)? else {
+            return Err(Error::RepoNotFound(repo.id.to_string()));
+        };
+
+        repo.update(&self.conn)?;
 
         Ok(())
     }
 
     pub fn get_repos(&self, project: &Project) -> Result<Vec<Repo>, Error> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, project, path FROM activities WHERE project=?1")?;
+        let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
+            return Err(Error::ProjectNotFound(project.id.to_string()));
+        };
 
-        let repos: Vec<_> = stmt
-            .query_map([project.id], |row| {
-                let path: String = row.get(2)?;
-                Ok(Repo {
-                    id: row.get(0)?,
-                    project: row.get(1)?,
-                    path: PathBuf::from(path),
-                })
-            })?
-            .filter_map(|a| a.ok())
+        let repos = Repo::get_all(&self.conn)?
+            .into_iter()
+            .filter(|r| r.project == project.id)
             .collect();
 
         Ok(repos)
-    }
-}
-
-impl DataStore {
-    fn init_tables(&self) -> Result<(), Error> {
-        project::init_table(&self.conn)?;
-        activity::init_table(&self.conn)?;
-        activitytype::init_table(&self.conn)?;
-        repo::init_table(&self.conn)?;
-
-        Ok(())
     }
 }

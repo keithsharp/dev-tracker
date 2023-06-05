@@ -29,7 +29,7 @@ fn main() -> anyhow::Result<()> {
             cli::DeleteCommand::ActivityType(args) => ops::delete_activitytype(args, &ds)?,
         },
         cli::Command::Cancel(command) => match command {
-            cli::CancelCommand::Activity => ops::cancel_actvity(&ds)?,
+            cli::CancelCommand::Activity(args) => ops::cancel_actvity(args, &ds)?,
         },
         cli::Command::Describe(command) => match command {
             cli::DescribeCommand::Project(args) => ops::describe_project(args, &ds)?,
@@ -48,7 +48,7 @@ fn main() -> anyhow::Result<()> {
             cli::StartCommand::Activity(args) => ops::start_activity(args, &ds)?,
         },
         cli::Command::Stop(command) => match command {
-            cli::StopCommand::Activity => ops::stop_activity(&ds)?,
+            cli::StopCommand::Activity(args) => ops::stop_activity(args, &ds)?,
         },
         cli::Command::Update(command) => match command {
             cli::UpdateCommand::ActivityType(args) => ops::update_activitytype(args, &ds)?,

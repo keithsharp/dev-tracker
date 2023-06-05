@@ -19,8 +19,8 @@ pub(crate) fn init_table(conn: &Connection) -> Result<(), crate::Error> {
     )?;
     Ok(())
 }
-#[derive(Debug)]
-pub(crate) struct Activity {
+#[derive(Clone, Debug)]
+pub struct Activity {
     pub(crate) id: u64,
     pub(crate) project: u64,
     pub(crate) atype: u64,
@@ -101,7 +101,7 @@ impl Display for Activity {
 }
 
 impl Activity {
-    pub(crate) fn new(project: u64, atype: u64, description: Option<String>) -> Self {
+    pub fn new(project: u64, atype: u64, description: Option<String>) -> Self {
         Self {
             id: 0,
             project: project,
@@ -112,52 +112,52 @@ impl Activity {
         }
     }
 
-    pub(crate) fn id(&self) -> u64 {
+    pub fn id(&self) -> u64 {
         self.id
     }
 
-    pub(crate) fn project(&self) -> u64 {
+    pub fn project(&self) -> u64 {
         self.project
     }
 
-    pub(crate) fn set_project(&mut self, id: u64) {
+    pub fn set_project(&mut self, id: u64) {
         self.project = id;
     }
 
-    pub(crate) fn atype(&self) -> u64 {
+    pub fn atype(&self) -> u64 {
         self.atype
     }
 
-    pub(crate) fn set_atype(&mut self, id: u64) {
+    pub fn set_atype(&mut self, id: u64) {
         self.atype = id;
     }
 
-    pub(crate) fn description(&self) -> Option<&str> {
+    pub fn description(&self) -> Option<&str> {
         self.description.as_deref()
     }
 
-    pub(crate) fn set_description(&mut self, description: Option<String>) {
+    pub fn set_description(&mut self, description: Option<String>) {
         self.description = description;
     }
 
-    pub(crate) fn start_time(&self) -> DateTime<Utc> {
+    pub fn start_time(&self) -> DateTime<Utc> {
         self.start
     }
 
-    pub(crate) fn end_time(&self) -> Option<DateTime<Utc>> {
+    pub fn end_time(&self) -> Option<DateTime<Utc>> {
         self.end
     }
 
-    pub(crate) fn set_end_time(&mut self, end: Option<DateTime<Utc>>) {
+    pub fn set_end_time(&mut self, end: Option<DateTime<Utc>>) {
         self.end = end;
     }
 
     // TODO: should this throw an error rather than silently overwrite
-    pub(crate) fn stop(&mut self) {
+    pub fn stop(&mut self) {
         self.end = Some(Utc::now());
     }
 
-    pub(crate) fn duration(&self) -> Option<Duration> {
+    pub fn duration(&self) -> Option<Duration> {
         let Some(end) = self.end else {
             return None;
         };
@@ -175,7 +175,7 @@ impl Activity {
         Ok(())
     }
 
-    pub(crate) fn read(id: u64, conn: &Connection) -> Result<Self, Error> {
+    pub(crate) fn get_with_id(id: u64, conn: &Connection) -> Result<Option<Self>, Error> {
         let mut stmt = conn.prepare(
             "SELECT id, project, atype, description, start, end FROM activities WHERE id=?1",
         )?;
@@ -195,10 +195,53 @@ impl Activity {
             .collect();
 
         if activities.len() == 1 {
-            return Ok(activities.remove(0));
+            return Ok(Some(activities.remove(0)));
         } else {
-            return Err(Error::ActivityNotFound(id));
+            return Ok(None);
         }
+    }
+
+    pub(crate) fn get_if_running(conn: &Connection) -> Result<Vec<Self>, Error> {
+        let mut stmt = conn.prepare(
+            "SELECT id, project, atype, description, start FROM activities WHERE end IS NULL",
+        )?;
+
+        let activities: Vec<_> = stmt
+            .query_map([], |row| {
+                Ok(Activity {
+                    id: row.get(0)?,
+                    project: row.get(1)?,
+                    atype: row.get(2)?,
+                    description: row.get(3)?,
+                    start: row.get(4)?,
+                    end: row.get(5)?,
+                })
+            })?
+            .filter_map(|a| a.ok())
+            .collect();
+
+        Ok(activities)
+    }
+
+    pub(crate) fn get_all(conn: &Connection) -> Result<Vec<Self>, Error> {
+        let mut stmt =
+            conn.prepare("SELECT id, project, atype, description, start FROM activities")?;
+
+        let activities: Vec<_> = stmt
+            .query_map([], |row| {
+                Ok(Activity {
+                    id: row.get(0)?,
+                    project: row.get(1)?,
+                    atype: row.get(2)?,
+                    description: row.get(3)?,
+                    start: row.get(4)?,
+                    end: row.get(5)?,
+                })
+            })?
+            .filter_map(|a| a.ok())
+            .collect();
+
+        Ok(activities)
     }
 
     pub(crate) fn update(&self, conn: &Connection) -> Result<(), Error> {

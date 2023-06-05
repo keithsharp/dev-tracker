@@ -17,7 +17,7 @@ pub(crate) fn init_table(conn: &Connection) -> Result<(), crate::Error> {
 }
 
 #[derive(Debug)]
-pub(crate) struct ActivityType {
+pub struct ActivityType {
     pub(crate) id: u64,
     pub(crate) name: String,
     pub(crate) description: Option<String>,
@@ -30,7 +30,7 @@ impl Display for ActivityType {
 }
 
 impl ActivityType {
-    pub(crate) fn new(name: String, description: Option<String>) -> Self {
+    pub fn new(name: String, description: Option<String>) -> Self {
         Self {
             id: 0,
             name,
@@ -38,23 +38,23 @@ impl ActivityType {
         }
     }
 
-    pub(crate) fn id(&self) -> u64 {
+    pub fn id(&self) -> u64 {
         self.id
     }
 
-    pub(crate) fn name(&self) -> &str {
+    pub fn name(&self) -> &str {
         &self.name
     }
 
-    pub(crate) fn set_name(&mut self, name: String) {
+    pub fn set_name(&mut self, name: String) {
         self.name = name;
     }
 
-    pub(crate) fn description(&self) -> Option<&str> {
+    pub fn description(&self) -> Option<&str> {
         self.description.as_deref()
     }
 
-    pub(crate) fn set_description(&mut self, description: Option<String>) {
+    pub fn set_description(&mut self, description: Option<String>) {
         self.description = description;
     }
 }
@@ -68,7 +68,7 @@ impl ActivityType {
         Ok(())
     }
 
-    pub(crate) fn read(id: u64, conn: &Connection) -> Result<Self, Error> {
+    pub(crate) fn get_with_id(id: u64, conn: &Connection) -> Result<Option<Self>, Error> {
         let mut stmt = conn.prepare("SELECT id, name, description FROM projects WHERE id=?1")?;
         let mut ats: Vec<ActivityType> = stmt
             .query_map([&id], |row| {
@@ -82,10 +82,42 @@ impl ActivityType {
             .collect();
 
         if ats.len() == 1 {
-            return Ok(ats.remove(0));
+            return Ok(Some(ats.remove(0)));
         } else {
-            return Err(Error::ActivityTypeNotFound(id));
+            return Ok(None);
         }
+    }
+
+    pub(crate) fn get_with_name(name: &str, conn: &Connection) -> Result<Vec<Self>, Error> {
+        let mut stmt = conn.prepare("SELECT id, name, description FROM projects WHERE name=?1")?;
+        let ats: Vec<ActivityType> = stmt
+            .query_map([&name], |row| {
+                Ok(ActivityType {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    description: row.get(1)?,
+                })
+            })?
+            .filter_map(|p| p.ok())
+            .collect();
+
+        Ok(ats)
+    }
+
+    pub(crate) fn get_all(conn: &Connection) -> Result<Vec<Self>, Error> {
+        let mut stmt = conn.prepare("SELECT id, name, description FROM projects")?;
+        let ats: Vec<ActivityType> = stmt
+            .query_map([], |row| {
+                Ok(ActivityType {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    description: row.get(1)?,
+                })
+            })?
+            .filter_map(|p| p.ok())
+            .collect();
+
+        Ok(ats)
     }
 
     pub(crate) fn update(&self, conn: &Connection) -> Result<(), Error> {

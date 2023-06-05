@@ -16,7 +16,7 @@ pub(crate) fn init_table(conn: &Connection) -> Result<(), Error> {
 }
 
 #[derive(Debug)]
-pub(crate) struct Project {
+pub struct Project {
     pub(crate) id: u64,
     pub(crate) name: String,
 }
@@ -28,19 +28,19 @@ impl Display for Project {
 }
 
 impl Project {
-    pub(crate) fn new(name: String) -> Self {
+    pub fn new(name: String) -> Self {
         Self { id: 0, name }
     }
 
-    pub(crate) fn id(&self) -> u64 {
+    pub fn id(&self) -> u64 {
         self.id
     }
 
-    pub(crate) fn name(&self) -> &str {
+    pub fn name(&self) -> &str {
         &self.name
     }
 
-    pub(crate) fn set_name(&mut self, name: String) {
+    pub fn set_name(&mut self, name: String) {
         self.name = name;
     }
 }
@@ -51,7 +51,7 @@ impl Project {
         Ok(())
     }
 
-    pub(crate) fn read(id: u64, conn: &Connection) -> Result<Self, Error> {
+    pub(crate) fn get_with_id(id: u64, conn: &Connection) -> Result<Option<Self>, Error> {
         let mut stmt = conn.prepare("SELECT id, name FROM projects WHERE id=?1")?;
         let mut projects: Vec<Project> = stmt
             .query_map([&id], |row| {
@@ -64,10 +64,40 @@ impl Project {
             .collect();
 
         if projects.len() == 1 {
-            return Ok(projects.remove(0));
+            return Ok(Some(projects.remove(0)));
         } else {
-            return Err(Error::ProjectNotFound(id));
+            return Ok(None);
         }
+    }
+
+    pub(crate) fn get_with_name(name: &str, conn: &Connection) -> Result<Vec<Self>, Error> {
+        let mut stmt = conn.prepare("SELECT id, name FROM projects WHERE name=?1")?;
+        let projects: Vec<Project> = stmt
+            .query_map([&name], |row| {
+                Ok(Project {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                })
+            })?
+            .filter_map(|p| p.ok())
+            .collect();
+
+        Ok(projects)
+    }
+
+    pub(crate) fn get_all(conn: &Connection) -> Result<Vec<Self>, Error> {
+        let mut stmt = conn.prepare("SELECT id, name FROM projects")?;
+        let projects: Vec<Project> = stmt
+            .query_map([], |row| {
+                Ok(Project {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                })
+            })?
+            .filter_map(|p| p.ok())
+            .collect();
+
+        Ok(projects)
     }
 
     pub(crate) fn update(&self, conn: &Connection) -> Result<(), Error> {
