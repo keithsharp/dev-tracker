@@ -1,8 +1,12 @@
 use std::path::PathBuf;
 
-use chrono::offset::TimeZone;
-use chrono::{DateTime, Local, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use clap::{Args, Parser, Subcommand};
+
+mod argparser;
+use argparser::*;
+
+mod errors;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -11,17 +15,6 @@ pub struct Arguments {
     pub command: Command,
     #[clap(long)]
     pub config_file: Option<PathBuf>,
-}
-
-fn parse_datetime(arg: &str) -> Result<DateTime<Utc>, chrono::format::ParseError> {
-    let datetime = NaiveDateTime::parse_from_str(arg, "%Y-%m-%dT%H:%M")?;
-    let datetime = match Local.from_local_datetime(&datetime) {
-        chrono::LocalResult::Single(datetime) => datetime,
-        _ => panic!("Failed to convert local datetime into UTC datetime."),
-    };
-    let datetime: DateTime<Utc> = DateTime::from(datetime);
-
-    Ok(datetime)
 }
 
 #[derive(Subcommand)]
@@ -52,18 +45,25 @@ pub enum Command {
 pub enum AddCommand {
     Project(AddProjectArgs),
     ActivityType(AddActivityTypeArgs),
+    Repo(AddRepoArgs),
 }
 
 #[derive(Args)]
 pub struct AddProjectArgs {
     pub name: String,
-    pub path: PathBuf,
+    pub path: Option<PathBuf>,
 }
 
 #[derive(Args)]
 pub struct AddActivityTypeArgs {
     pub name: String,
     pub description: Option<String>,
+}
+
+#[derive(Args)]
+pub struct AddRepoArgs {
+    pub project: String,
+    pub path: PathBuf,
 }
 
 #[derive(Subcommand)]
@@ -73,7 +73,7 @@ pub enum CancelCommand {
 
 #[derive(Args)]
 pub struct CancelActivityTypeArgs {
-    pub name: String,
+    pub project: String,
 }
 
 #[derive(Subcommand)]
@@ -81,6 +81,7 @@ pub enum DeleteCommand {
     Project(DeleteProjectArgs),
     Activity(DeleteActivityArgs),
     ActivityType(DeleteActivityTypeArgs),
+    Repo(DeleteRepoArgs),
 }
 
 #[derive(Args)]
@@ -96,6 +97,11 @@ pub struct DeleteActivityArgs {
 #[derive(Args)]
 pub struct DeleteActivityTypeArgs {
     pub name: String,
+}
+
+#[derive(Args)]
+pub struct DeleteRepoArgs {
+    pub path: PathBuf,
 }
 
 #[derive(Subcommand)]
@@ -116,9 +122,16 @@ pub struct DescribeActivityArgs {
 
 #[derive(Subcommand)]
 pub enum ListCommand {
-    Projects,
+    Projects(ListProjectArgs),
     Activities(ListActivityArgs),
     ActivityTypes(ListActivityTypeArgs),
+    Repos(ListRepoArgs),
+}
+
+#[derive(Args)]
+pub struct ListProjectArgs {
+    #[clap(short, action)]
+    pub verbose: bool,
 }
 
 #[derive(Args)]
@@ -132,6 +145,13 @@ pub struct ListActivityArgs {
 pub struct ListActivityTypeArgs {
     #[clap(short, action)]
     pub verbose: bool,
+}
+
+#[derive(Args)]
+pub struct ListRepoArgs {
+    #[clap(short, action)]
+    pub verbose: bool,
+    pub project: String,
 }
 
 #[derive(Subcommand)]
@@ -178,6 +198,7 @@ pub struct StopActivityArgs {
 pub enum UpdateCommand {
     Activity(UpdateActivityArgs),
     ActivityType(UpdateActivityTypeArgs),
+    Repo(UpdateRepoArgs),
 }
 
 #[derive(Args)]
@@ -222,4 +243,10 @@ pub struct UpdateActivityProjectArgs {
 pub struct UpdateActivityTypeArgs {
     pub name: String,
     pub description: Option<String>,
+}
+
+#[derive(Args)]
+pub struct UpdateRepoArgs {
+    pub old_path: PathBuf,
+    pub new_path: PathBuf,
 }

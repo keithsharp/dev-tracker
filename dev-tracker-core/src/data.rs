@@ -322,6 +322,11 @@ impl DataStore {
         }
     }
 
+    pub fn get_repo_with_id(&self, id: u64) -> Result<Option<Repo>, Error> {
+        let repo = Repo::get_with_id(id, &self.conn)?;
+        Ok(repo)
+    }
+
     pub fn delete_repo(&self, repo: Repo) -> Result<(), Error> {
         let Some(repo) = Repo::get_with_id(repo.id, &self.conn)? else {
             return Err(Error::RepoNotFound(repo.id.to_string()));

@@ -22,11 +22,13 @@ fn main() -> anyhow::Result<()> {
         cli::Command::Add(command) => match command {
             cli::AddCommand::Project(args) => ops::add_project(args, &ds)?,
             cli::AddCommand::ActivityType(args) => ops::add_activitytype(args, &ds)?,
+            cli::AddCommand::Repo(args) => ops::add_repo(args, &ds)?,
         },
         cli::Command::Delete(command) => match command {
             cli::DeleteCommand::Project(args) => ops::delete_project(args, &ds)?,
             cli::DeleteCommand::Activity(args) => ops::delete_activity(args, &ds)?,
             cli::DeleteCommand::ActivityType(args) => ops::delete_activitytype(args, &ds)?,
+            cli::DeleteCommand::Repo(args) => ops::delete_repo(args, &ds)?,
         },
         cli::Command::Cancel(command) => match command {
             cli::CancelCommand::Activity(args) => ops::cancel_actvity(args, &ds)?,
@@ -36,9 +38,10 @@ fn main() -> anyhow::Result<()> {
             cli::DescribeCommand::Activity(args) => ops::describe_activity(args, &ds)?,
         },
         cli::Command::List(command) => match command {
-            cli::ListCommand::Projects => ops::list_projects(&ds)?,
+            cli::ListCommand::Projects(args) => ops::list_projects(args, &ds)?,
             cli::ListCommand::Activities(args) => ops::list_activities(args, &ds)?,
             cli::ListCommand::ActivityTypes(args) => ops::list_activitytypes(args, &ds)?,
+            cli::ListCommand::Repos(args) => ops::list_repos(args, &ds)?,
         },
         cli::Command::Rename(command) => match command {
             cli::RenameCommand::Project(args) => ops::rename_project(args, &ds)?,
@@ -64,6 +67,7 @@ fn main() -> anyhow::Result<()> {
                     ops::update_activity_atype(args, &ds)?
                 }
             },
+            cli::UpdateCommand::Repo(args) => ops::update_repo(args, &ds)?,
         },
     }
 

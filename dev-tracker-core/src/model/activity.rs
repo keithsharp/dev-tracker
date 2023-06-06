@@ -52,52 +52,6 @@ impl Display for Activity {
             )
         }
     }
-
-    // fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    //     let local_start: DateTime<Local> = DateTime::from(self.start);
-    //     if let Some(end) = self.end {
-    //         let local_end: DateTime<Local> = DateTime::from(end);
-    //         let dur = self
-    //             .duration()
-    //             .expect("we have an end so we should have a duration");
-    //         let hours = dur.num_hours();
-    //         let minutes = dur.num_minutes() % 60;
-
-    //         let hours = match hours {
-    //             0 => String::new(),
-    //             1 => "1 hour".to_string(),
-    //             h => format!("{} hours", h),
-    //         };
-
-    //         let minutes = match minutes {
-    //             0 => String::new(),
-    //             1 => "1 minute".to_string(),
-    //             m => format!("{} minutes", m),
-    //         };
-
-    //         let duration = match (hours.is_empty(), minutes.is_empty()) {
-    //             (false, false) => format!("{} {}", hours, minutes),
-    //             (true, false) => minutes,
-    //             (false, true) => hours,
-    //             (true, true) => "less than a minutes".to_string(),
-    //         };
-
-    //         write!(
-    //             f,
-    //             "from {} until {}, total time {}",
-    //             local_start.format("%I:%M%P on %A %d %B %Y").to_string(),
-    //             local_end.format("%I:%M%P on %A %d %B %Y").to_string(),
-    //             duration
-    //         )?;
-    //     } else {
-    //         write!(
-    //             f,
-    //             "started at {}, and is still running",
-    //             local_start.format("%I:%M%P on %A %d %B %Y").to_string()
-    //         )?;
-    //     }
-    //     Ok(())
-    // }
 }
 
 impl Activity {
