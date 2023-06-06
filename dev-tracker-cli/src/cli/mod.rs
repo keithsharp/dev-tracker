@@ -44,6 +44,7 @@ pub enum Command {
 #[derive(Subcommand)]
 pub enum AddCommand {
     Project(AddProjectArgs),
+    #[command(alias = "at")]
     ActivityType(AddActivityTypeArgs),
     Repo(AddRepoArgs),
 }
@@ -80,6 +81,7 @@ pub struct CancelActivityTypeArgs {
 pub enum DeleteCommand {
     Project(DeleteProjectArgs),
     Activity(DeleteActivityArgs),
+    #[command(alias = "at")]
     ActivityType(DeleteActivityTypeArgs),
     Repo(DeleteRepoArgs),
 }
@@ -124,6 +126,7 @@ pub struct DescribeActivityArgs {
 pub enum ListCommand {
     Projects(ListProjectArgs),
     Activities(ListActivityArgs),
+    #[command(alias = "ats")]
     ActivityTypes(ListActivityTypeArgs),
     Repos(ListRepoArgs),
 }
@@ -157,6 +160,7 @@ pub struct ListRepoArgs {
 #[derive(Subcommand)]
 pub enum RenameCommand {
     Project(RenameProjectArgs),
+    #[command(alias = "at")]
     ActivityType(RenameActivityTypeArgs),
 }
 
@@ -197,6 +201,7 @@ pub struct StopActivityArgs {
 #[derive(Subcommand)]
 pub enum UpdateCommand {
     Activity(UpdateActivityArgs),
+    #[command(alias = "at")]
     ActivityType(UpdateActivityTypeArgs),
     Repo(UpdateRepoArgs),
 }
@@ -210,6 +215,7 @@ pub struct UpdateActivityArgs {
 #[derive(Subcommand)]
 pub enum UpdateActivityCommand {
     End(UpdateActivityEndArgs),
+    #[command(alias = "at")]
     ActivityType(UpdateActivityActivityTypeArgs),
     Description(UpdateActivityDescriptionArgs),
     Project(UpdateActivityProjectArgs),

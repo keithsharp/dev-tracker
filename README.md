@@ -77,11 +77,10 @@ Updates the description for the activity type with `NAME`.  Use this command wit
 Updates the path for the repository with `OLD_PATH`.  Returns an error if there is no such repository  with `OLD_PATH` or if there is an existing repository with `NEW_PATH`.
 
 # TODO
-1. What to do with existing activities when deleting an activity type?  Delete? Leaving dangling? Remap to a default?  Update code **and** documentation.
-2. LoC counting for each project and repository, display in describe project.
-3. Remove the config file option.  Add a `--data-file` option to point to the database, have it configurable using an environment variable.
-4. Add a `--json` flag (global/local) to make the output JSON.
-5. Add a short alias for `activity-type` and `activity-types`.
+1. LoC counting for each project and repository, display in describe project.
+2. Remove the config file option.  Add a `--data-file` option to point to the database, have it configurable using an environment variable.
+3. Add a `--json` flag (global/local) to make the output JSON.
+4. Consider adding abbreviation aliases for other nouns.
 
 # Copyright and License
 Copyright 2023, Keith Sharp, kms@passback.co.uk.

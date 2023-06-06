@@ -13,6 +13,13 @@ pub(crate) fn init_table(conn: &Connection) -> Result<(), crate::Error> {
         )",
         (),
     )?;
+
+    if ActivityType::get_with_id(0, conn)?.is_none() {
+        conn.execute(
+        "INSERT INTO activitytypes (id, name, description) VALUES (0, 'Unknown', 'Unknown activity type')",
+    ())?;
+    }
+
     Ok(())
 }
 

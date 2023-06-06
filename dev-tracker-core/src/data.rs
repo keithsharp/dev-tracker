@@ -138,12 +138,14 @@ impl DataStore {
             return Err(Error::ActivityTypeNotFound(at.id.to_string()));
         };
 
-        let activities: Vec<_> = Activity::get_all(&self.conn)?
+        let activities: Vec<Activity> = Activity::get_all(&self.conn)?
             .into_iter()
             .filter(|a| a.atype == at.id)
             .collect();
-        if activities.len() > 0 {
-            return Err(Error::ActivityTypeInUse(at.id.to_string()));
+
+        for mut activity in activities {
+            activity.set_atype(0);
+            activity.update(&self.conn)?;
         }
 
         at.delete(&self.conn)?;
@@ -286,7 +288,7 @@ impl DataStore {
     }
 
     pub fn get_activities(&self, project: &Project) -> Result<Vec<Activity>, Error> {
-        let Some(_project) = Project::get_with_id(project.id, &self.conn)? else {
+        let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
             return Err(Error::ProjectNotFound(project.id.to_string()));
         };
 
