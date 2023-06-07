@@ -157,7 +157,7 @@ impl Activity {
 
     pub(crate) fn get_if_running(conn: &Connection) -> Result<Vec<Self>, Error> {
         let mut stmt = conn.prepare(
-            "SELECT id, project, atype, description, start FROM activities WHERE end IS NULL",
+            "SELECT id, project, atype, description, start, end FROM activities WHERE end IS NULL",
         )?;
 
         let activities: Vec<_> = stmt

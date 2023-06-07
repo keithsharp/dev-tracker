@@ -223,6 +223,8 @@ pub enum StopCommand {
 #[derive(Args)]
 pub struct StopActivityArgs {
     pub project: String,
+    #[clap(long, action)]
+    pub no_count: bool,
 }
 
 #[derive(Subcommand)]

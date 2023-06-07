@@ -457,8 +457,17 @@ pub fn stop_activity(args: StopActivityArgs, ds: &DataStore) -> anyhow::Result<(
     };
 
     if ds.stop_running_activity(&project)?.is_none() {
-        eprintln!("Stop activity failed, no activity running");
+        eprintln!(
+            "Stop activity failed, no activity running for {}",
+            project.name()
+        );
         process::exit(1)
+    }
+
+    if !args.no_count {
+        for repo in ds.get_repos(&project)? {
+            ds.create_count(&repo)?;
+        }
     }
 
     Ok(())
