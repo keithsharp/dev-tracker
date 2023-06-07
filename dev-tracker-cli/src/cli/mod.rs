@@ -23,6 +23,8 @@ pub enum Command {
     Add(AddCommand),
     #[clap(subcommand)]
     Cancel(CancelCommand),
+    // #[clap(subcommand)]
+    Count(CountCommandArgs),
     #[clap(subcommand)]
     Delete(DeleteCommand),
     #[clap(subcommand)]
@@ -67,6 +69,11 @@ pub struct AddRepoArgs {
     pub path: PathBuf,
 }
 
+#[derive(Args)]
+pub struct CountCommandArgs {
+    pub project: String,
+}
+
 #[derive(Subcommand)]
 pub enum CancelCommand {
     Activity(CancelActivityTypeArgs),
@@ -83,6 +90,7 @@ pub enum DeleteCommand {
     Activity(DeleteActivityArgs),
     #[command(alias = "at")]
     ActivityType(DeleteActivityTypeArgs),
+    Count(DeleteCountArgs),
     Repo(DeleteRepoArgs),
 }
 
@@ -102,6 +110,11 @@ pub struct DeleteActivityTypeArgs {
 }
 
 #[derive(Args)]
+pub struct DeleteCountArgs {
+    pub id: u64,
+}
+
+#[derive(Args)]
 pub struct DeleteRepoArgs {
     pub path: PathBuf,
 }
@@ -110,6 +123,7 @@ pub struct DeleteRepoArgs {
 pub enum DescribeCommand {
     Project(DescribeProjectArgs),
     Activity(DescribeActivityArgs),
+    Count(DescribeCountArgs),
 }
 
 #[derive(Args)]
@@ -122,12 +136,18 @@ pub struct DescribeActivityArgs {
     pub id: u64,
 }
 
+#[derive(Args)]
+pub struct DescribeCountArgs {
+    pub id: u64,
+}
+
 #[derive(Subcommand)]
 pub enum ListCommand {
     Projects(ListProjectArgs),
     Activities(ListActivityArgs),
     #[command(alias = "ats")]
     ActivityTypes(ListActivityTypeArgs),
+    Counts(ListCountArgs),
     Repos(ListRepoArgs),
 }
 
@@ -148,6 +168,13 @@ pub struct ListActivityArgs {
 pub struct ListActivityTypeArgs {
     #[clap(short, action)]
     pub verbose: bool,
+}
+
+#[derive(Args)]
+pub struct ListCountArgs {
+    #[clap(short, action)]
+    pub verbose: bool,
+    pub project: String,
 }
 
 #[derive(Args)]

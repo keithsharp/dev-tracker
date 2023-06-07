@@ -29,19 +29,23 @@ fn main() -> anyhow::Result<()> {
             cli::DeleteCommand::Activity(args) => ops::delete_activity(args, &ds)?,
             cli::DeleteCommand::ActivityType(args) => ops::delete_activitytype(args, &ds)?,
             cli::DeleteCommand::Repo(args) => ops::delete_repo(args, &ds)?,
+            cli::DeleteCommand::Count(args) => ops::delete_count(args, &ds)?,
         },
+        cli::Command::Count(args) => ops::count(args, &ds)?,
         cli::Command::Cancel(command) => match command {
             cli::CancelCommand::Activity(args) => ops::cancel_actvity(args, &ds)?,
         },
         cli::Command::Describe(command) => match command {
             cli::DescribeCommand::Project(args) => ops::describe_project(args, &ds)?,
             cli::DescribeCommand::Activity(args) => ops::describe_activity(args, &ds)?,
+            cli::DescribeCommand::Count(args) => ops::describe_count(args, &ds)?,
         },
         cli::Command::List(command) => match command {
             cli::ListCommand::Projects(args) => ops::list_projects(args, &ds)?,
             cli::ListCommand::Activities(args) => ops::list_activities(args, &ds)?,
             cli::ListCommand::ActivityTypes(args) => ops::list_activitytypes(args, &ds)?,
             cli::ListCommand::Repos(args) => ops::list_repos(args, &ds)?,
+            cli::ListCommand::Counts(args) => ops::list_counts(args, &ds)?,
         },
         cli::Command::Rename(command) => match command {
             cli::RenameCommand::Project(args) => ops::rename_project(args, &ds)?,

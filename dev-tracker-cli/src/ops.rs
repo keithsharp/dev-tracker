@@ -5,16 +5,24 @@ use chrono::{DateTime, Local};
 use dev_tracker_core::data::DataStore;
 
 use crate::cli::{
-    AddActivityTypeArgs, AddProjectArgs, AddRepoArgs, CancelActivityTypeArgs, DeleteActivityArgs,
-    DeleteActivityTypeArgs, DeleteProjectArgs, DeleteRepoArgs, DescribeActivityArgs,
-    DescribeProjectArgs, ListActivityArgs, ListActivityTypeArgs, ListProjectArgs, ListRepoArgs,
-    RenameActivityTypeArgs, RenameProjectArgs, StartActivityArgs, StopActivityArgs,
-    UpdateActivityActivityTypeArgs, UpdateActivityDescriptionArgs, UpdateActivityEndArgs,
-    UpdateActivityProjectArgs, UpdateActivityTypeArgs, UpdateRepoArgs,
+    AddActivityTypeArgs, AddProjectArgs, AddRepoArgs, CancelActivityTypeArgs, CountCommandArgs,
+    DeleteActivityArgs, DeleteActivityTypeArgs, DeleteCountArgs, DeleteProjectArgs, DeleteRepoArgs,
+    DescribeActivityArgs, DescribeCountArgs, DescribeProjectArgs, ListActivityArgs,
+    ListActivityTypeArgs, ListCountArgs, ListProjectArgs, ListRepoArgs, RenameActivityTypeArgs,
+    RenameProjectArgs, StartActivityArgs, StopActivityArgs, UpdateActivityActivityTypeArgs,
+    UpdateActivityDescriptionArgs, UpdateActivityEndArgs, UpdateActivityProjectArgs,
+    UpdateActivityTypeArgs, UpdateRepoArgs,
 };
 
 pub fn add_project(args: AddProjectArgs, ds: &DataStore) -> anyhow::Result<()> {
     ds.create_project(&args.name)?;
+
+    if let Some(path) = args.path {
+        let project = ds
+            .get_project(&args.name)?
+            .expect("should always be able to get the project we just created");
+        ds.create_repo(&project, &path)?;
+    }
 
     Ok(())
 }
@@ -32,6 +40,21 @@ pub fn add_repo(args: AddRepoArgs, ds: &DataStore) -> anyhow::Result<()> {
     };
 
     ds.create_repo(&project, &args.path)?;
+
+    Ok(())
+}
+
+pub fn count(args: CountCommandArgs, ds: &DataStore) -> anyhow::Result<()> {
+    let Some(project) = ds.get_project(&args.project)? else {
+        eprintln!("Cancel failed, no such project: {}", args.project);
+        process::exit(1);
+    };
+
+    let repos = ds.get_repos(&project)?;
+
+    for repo in repos.iter() {
+        let _count = ds.create_count(repo)?;
+    }
 
     Ok(())
 }
@@ -80,6 +103,17 @@ pub fn delete_activitytype(args: DeleteActivityTypeArgs, ds: &DataStore) -> anyh
     Ok(())
 }
 
+pub fn delete_count(args: DeleteCountArgs, ds: &DataStore) -> anyhow::Result<()> {
+    let Some(count) = ds.get_count_with_id(args.id)? else {
+        eprintln!("Delete failed, no such count: {}", args.id);
+        process::exit(1);
+    };
+
+    ds.delete_count(count)?;
+
+    Ok(())
+}
+
 pub fn delete_repo(args: DeleteRepoArgs, ds: &DataStore) -> anyhow::Result<()> {
     let Some(repo) = ds.get_repo(&args.path)? else {
         eprintln!("Delete failed, no such repository with path: {}", args.path.display());
@@ -102,6 +136,9 @@ pub fn describe_project(args: DescribeProjectArgs, ds: &DataStore) -> anyhow::Re
     let repos = ds.get_repos(&project)?;
     for repo in repos.iter() {
         println!("Repository path '{}'", repo.path().display());
+        if let Some(count) = ds.get_latest_count(&repo)? {
+            println!("  {} lines of code", count.count())
+        }
     }
     if repos.is_empty() {
         println!("No repositories")
@@ -173,6 +210,30 @@ pub fn describe_activity(args: DescribeActivityArgs, ds: &DataStore) -> anyhow::
     } else {
         println!("Finished: still running");
     }
+
+    Ok(())
+}
+
+pub fn describe_count(args: DescribeCountArgs, ds: &DataStore) -> anyhow::Result<()> {
+    let Some(count) = ds.get_count_with_id(args.id)? else {
+        eprintln!("Describe failed, no such count: {}", args.id);
+        process::exit(1);
+    };
+
+    let Some(repo) = ds.get_repo_with_id(count.repo())? else {
+        eprintln!("Describe failed, no such repository: {}", count.repo());
+        process::exit(1);
+    };
+
+    let Some(project) = ds.get_project_with_id(repo.project())? else {
+        eprintln!("Describe failed, no such project: {}", repo.project());
+        process::exit(1);
+    };
+
+    println!("Project: {}", project.name());
+    println!("Repository: {}", repo.path().display());
+    println!("Date: {}", count.date().format("%A %d %B %Y at %I:%M%P"));
+    println!("Lines of code: {}", count.count());
 
     Ok(())
 }
@@ -270,6 +331,35 @@ pub fn list_activitytypes(args: ListActivityTypeArgs, ds: &DataStore) -> anyhow:
 
     if ats.len() < 1 {
         println!("No activity types in database");
+    }
+
+    Ok(())
+}
+
+pub fn list_counts(args: ListCountArgs, ds: &DataStore) -> anyhow::Result<()> {
+    let Some(project) = ds.get_project(&args.project)? else {
+        eprintln!("List counts failed, no such project: {}", args.project);
+        process::exit(1);
+    };
+
+    let repos = ds.get_repos(&project)?;
+    for repo in repos.iter() {
+        let counts = ds.get_counts(&repo)?;
+        for count in counts {
+            if args.verbose {
+                print!("{}. ", count.id());
+            }
+            println!(
+                "{} {} has {} lines of code",
+                count.date().format("%A %d %B %Y at %I:%M%P"),
+                repo.path().display(),
+                count.count()
+            );
+        }
+    }
+
+    if repos.len() < 1 {
+        println!("No repositories for project {} in database", project.name());
     }
 
     Ok(())

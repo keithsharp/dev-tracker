@@ -16,8 +16,11 @@ Creates a new repository at `PATH` and associates it with `PROJECT`.  Returns an
 ### `dt cancel activity <PROJECT>`
 Cancels the running activity for `PROJECT`.  Returns an error if there is no such project or no running activity on the project.
 
+### `dt count <PROJECT>` 
+Counts the lines of Rust code in `PROJECT`.  Returns an error is there is no such project.
+
 ### `dt delete project <NAME>`
-Deletes the project with `NAME` and all of it's associated activities and repositories.  Returns an error if there is no such project.
+Deletes the project with `NAME` and all of it's associated activities, repositories, and counts.  Returns an error if there is no such project.
 
 ### `dt delete activity <ID>`
 Deletes the activity with `ID`.  Returns an error if there is no such activity.  To obtain the `ID` of an activity use the `-v` flag for the `dt list activities <PROJECT>` command.  Returns an error if there is no such activity.
@@ -25,14 +28,20 @@ Deletes the activity with `ID`.  Returns an error if there is no such activity. 
 ### `dt delete activity-type <NAME>`
 Deletes the activity type with `NAME`.  Returns an error if there is no such activity type.
 
+### `dt delete count <ID>`
+Deletes the count with `ID`.  To obtain the `ID` of a count use the `-v` flag for the `dt list counts <PROJECT>` command.  Returns an error if there is no such count.
+
 ### `dt delete repo <PATH>`
-Deletes the repository with `PATH`.  Returns an error if there is no such repository.
+Deletes the repository with `PATH` and all of it's associated counts.  Returns an error if there is no such repository.
 
 ### `dt describe project <NAME>`
 Describes the project with `NAME`.  Lists the repositories, a count of the activities for the project, and a count of the total lines of code  for the project.  Returns an error if there is no such project.
 
 ### `dt describe activity <ID>`
 Describes the activity with `ID`.  Lists the project name, the activity type, the start and end times (or still running), and the duration in minutes.  To obtain the `ID` of an activity use the `-v` flag for the `dt list activities <PROJECT>` command.  Returns an error if there is no such activity.
+
+### `dt describe count <ID>`
+Describes the count with `ID`.  Lists project name, the repository path, the date and time of the count, and the lines of Rust code.  To obtain the `ID` of a count use the `-v` flag for the `dt list counts <PROJECT>` command.  Returns an error if there is no such count, project, or repository.
 
 ### `dt list projects [-v]`
 List all of the projects in the database.  Use the optional `-v` flag to list the ID numbers for the projects.
@@ -42,6 +51,9 @@ List all of the activities for `PROJECT`.  Use the optional `-v` flag to list th
 
 ### `dt list activity-types [-v]`
 List all of the activity types.  Use the optional `-v` flag to list the ID numbers for the activity types.
+
+### `dt list counts [-v] <PROJECT>`
+List all of the counts for `PROJECT`.  Use the optional `-v` flag to list the ID numbers for the counts. Returns an error if there is no such project.
 
 ### `dt list repos [-v]`
 List all of the repositories for `PROJECT`.  Use the optional `-v` flag to list the ID numbers for the repositories.  Returns an error if there is no such project.
@@ -83,7 +95,8 @@ Updates the path for the repository with `OLD_PATH`.  Returns an error if there 
 4. Consider adding abbreviation aliases for other nouns.
 5. Use `clap_complete` to generate shell completions, probably need `xtask`.
 6. Translation/internationalization of the CLI.
-7. Polish:
+7. Build and install instructions.
+8. Polish:
    1. Add help to Clap
    2. Documentation of `dev-tracker-core`.
    3. Tests for `dev-tracker-core`.

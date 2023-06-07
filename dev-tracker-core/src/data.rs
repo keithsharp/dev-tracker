@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
 
 use chrono::Utc;
@@ -70,7 +71,7 @@ impl DataStore {
             .collect();
 
         for activity in activities {
-            activity.delete(&self.conn)?;
+            self.delete_activity(activity)?;
         }
 
         let repos: Vec<_> = Repo::get_all(&self.conn)?
@@ -79,7 +80,7 @@ impl DataStore {
             .collect();
 
         for repo in repos {
-            repo.delete(&self.conn)?;
+            self.delete_repo(repo)?;
         }
 
         project.delete(&self.conn)?;
@@ -337,6 +338,15 @@ impl DataStore {
             return Err(Error::RepoNotFound(repo.id.to_string()));
         };
 
+        let counts: Vec<_> = Count::get_all(&self.conn)?
+            .into_iter()
+            .filter(|c| c.repo == repo.id)
+            .collect();
+
+        for count in counts {
+            self.delete_count(count)?;
+        }
+
         repo.delete(&self.conn)?;
 
         Ok(())
@@ -391,6 +401,25 @@ impl DataStore {
     pub fn get_count_with_id(&self, id: u64) -> Result<Option<Count>, Error> {
         let count = Count::get_with_id(id, &self.conn)?;
         Ok(count)
+    }
+
+    pub fn get_latest_count(&self, repo: &Repo) -> Result<Option<Count>, Error> {
+        let mut counts = self.get_counts(repo)?;
+        counts.sort_by(|a, b| {
+            if a.date < b.date {
+                Ordering::Less
+            } else if a.date == b.date {
+                Ordering::Equal
+            } else {
+                Ordering::Greater
+            }
+        });
+
+        if counts.len() > 0 {
+            return Ok(Some(counts.remove(counts.len() - 1)));
+        } else {
+            return Ok(None);
+        }
     }
 
     pub fn delete_count(&self, count: Count) -> Result<(), Error> {
