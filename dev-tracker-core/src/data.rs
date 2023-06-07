@@ -2,12 +2,14 @@ use std::path::{Path, PathBuf};
 
 use chrono::Utc;
 use rusqlite::Connection;
+use tokei::{Config, LanguageType, Languages};
 
 use crate::model::activity::Activity;
 use crate::model::activitytype::ActivityType;
+use crate::model::count::Count;
 use crate::model::project::Project;
 use crate::model::repo::Repo;
-use crate::model::{activity, activitytype, project, repo};
+use crate::model::{activity, activitytype, count, project, repo};
 use crate::Error;
 
 #[derive(Debug)]
@@ -38,6 +40,7 @@ impl DataStore {
         activity::init_table(&self.conn)?;
         activitytype::init_table(&self.conn)?;
         repo::init_table(&self.conn)?;
+        count::init_table(&self.conn)?;
 
         Ok(())
     }
@@ -360,5 +363,56 @@ impl DataStore {
             .collect();
 
         Ok(repos)
+    }
+}
+
+// Count
+impl DataStore {
+    pub fn create_count(&self, repo: &Repo) -> Result<Count, Error> {
+        let Some(repo) = Repo::get_with_id(repo.id, &self.conn)? else {
+            return Err(Error::RepoNotFound(repo.id.to_string()));
+        };
+        let paths = vec![repo.path.display().to_string()];
+
+        let date = Utc::now();
+
+        let excluded = &["target"];
+        let config = Config::default();
+        let mut languages = Languages::new();
+        languages.get_statistics(&paths[..], excluded, &config);
+        let rust = &languages[&LanguageType::Rust];
+
+        let count = Count::new(repo.id, date, rust.code as u64);
+        count.create(&self.conn)?;
+
+        Ok(count)
+    }
+
+    pub fn get_count_with_id(&self, id: u64) -> Result<Option<Count>, Error> {
+        let count = Count::get_with_id(id, &self.conn)?;
+        Ok(count)
+    }
+
+    pub fn delete_count(&self, count: Count) -> Result<(), Error> {
+        let Some(count) = Count::get_with_id(count.id, &self.conn)? else {
+            return Err(Error::CountNotFound(count.id.to_string()));
+        };
+
+        count.delete(&self.conn)?;
+
+        Ok(())
+    }
+
+    pub fn get_counts(&self, repo: &Repo) -> Result<Vec<Count>, Error> {
+        let Some(repo) = Repo::get_with_id(repo.id, &self.conn)? else {
+            return Err(Error::RepoNotFound(repo.id.to_string()));
+        };
+
+        let counts = Count::get_all(&self.conn)?
+            .into_iter()
+            .filter(|c| c.repo == repo.id)
+            .collect();
+
+        Ok(counts)
     }
 }

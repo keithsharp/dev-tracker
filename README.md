@@ -81,6 +81,13 @@ Updates the path for the repository with `OLD_PATH`.  Returns an error if there 
 2. Remove the config file option.  Add a `--data-file` option to point to the database, have it configurable using an environment variable.
 3. Add a `--json` flag (global/local) to make the output JSON.
 4. Consider adding abbreviation aliases for other nouns.
+5. Use `clap_complete` to generate shell completions, probably need `xtask`.
+6. Translation/internationalization of the CLI.
+7. Polish:
+   1. Add help to Clap
+   2. Documentation of `dev-tracker-core`.
+   3. Tests for `dev-tracker-core`.
+
 
 # Copyright and License
 Copyright 2023, Keith Sharp, kms@passback.co.uk.
