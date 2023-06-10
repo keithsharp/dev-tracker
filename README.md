@@ -89,14 +89,15 @@ Updates the description for the activity type with `NAME`.  Use this command wit
 Updates the path for the repository with `OLD_PATH`.  Returns an error if there is no such repository  with `OLD_PATH` or if there is an existing repository with `NEW_PATH`.
 
 # TODO
-1. LoC counting for each project and repository, display in describe project.
-2. Remove the config file option.  Add a `--data-file` option to point to the database, have it configurable using an environment variable.
-3. Add a `--json` flag (global/local) to make the output JSON.
-4. Consider adding abbreviation aliases for other nouns.
-5. Use `clap_complete` to generate shell completions, probably need `xtask`.
-6. Translation/internationalization of the CLI.
-7. Build and install instructions.
-8. Polish:
+1. `.get(idx).as_deref()` rather than `.remove()`?
+2. LoC counting for each project and repository, display in describe project.
+3. Remove the config file option.  Add a `--data-file` option to point to the database, have it configurable using an environment variable.
+4. Add a `--json` flag (global/local) to make the output JSON.
+5. Consider adding abbreviation aliases for other nouns.
+6. Use `clap_complete` to generate shell completions, probably need `xtask`.
+7. Translation/internationalization of the CLI.
+8. Build and install instructions.
+9. Polish:
    1. Add help to Clap
    2. Documentation of `dev-tracker-core`.
    3. Tests for `dev-tracker-core`.

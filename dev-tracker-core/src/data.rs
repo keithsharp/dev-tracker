@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use chrono::Utc;
 use rusqlite::Connection;
-use tokei::{Config, LanguageType, Languages};
+use tokei::{Config, Languages};
 
 use crate::model::activity::Activity;
 use crate::model::activitytype::ActivityType;
@@ -390,9 +390,8 @@ impl DataStore {
         let config = Config::default();
         let mut languages = Languages::new();
         languages.get_statistics(&paths[..], excluded, &config);
-        let rust = &languages[&LanguageType::Rust];
 
-        let count = Count::new(repo.id, date, rust.code as u64);
+        let count = Count::new(repo.id, date, languages);
         count.create(&self.conn)?;
 
         Ok(count)
@@ -443,5 +442,13 @@ impl DataStore {
             .collect();
 
         Ok(counts)
+    }
+
+    pub fn get_total_loc(&self, count: &Count) -> Result<u64, Error> {
+        let Some(count) = Count::get_with_id(count.id, &self.conn)? else {
+            return Err(Error::CountNotFound(count.id.to_string()));
+        };
+
+        Ok(count.count.total().code as u64)
     }
 }

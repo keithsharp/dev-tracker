@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use chrono::{DateTime, Utc};
 use rusqlite::Connection;
+use tokei::Languages;
 
 use crate::Error;
 
@@ -11,7 +12,7 @@ pub(crate) fn init_table(conn: &Connection) -> Result<(), Error> {
             id      INTEGER PRIMARY KEY,
             repo    INTEGER NOT NULL,
             date    DATETIME NOT NULL,
-            count   INTEGER NOT NULL
+            count   TEXT NOT NULL
         )",
         (),
     )?;
@@ -23,7 +24,7 @@ pub struct Count {
     pub(crate) id: u64,
     pub(crate) repo: u64,
     pub(crate) date: DateTime<Utc>,
-    pub(crate) count: u64,
+    pub(crate) count: Languages,
 }
 
 impl Display for Count {
@@ -34,13 +35,13 @@ impl Display for Count {
             self.id,
             self.repo,
             self.date.format("%I:%M%P %A %d %B %Y"),
-            self.count
+            self.count.total().code
         )
     }
 }
 
 impl Count {
-    pub fn new(repo: u64, date: DateTime<Utc>, count: u64) -> Self {
+    pub fn new(repo: u64, date: DateTime<Utc>, count: Languages) -> Self {
         Self {
             id: 0,
             repo,
@@ -61,16 +62,17 @@ impl Count {
         self.date
     }
 
-    pub fn count(&self) -> u64 {
-        self.count
+    pub fn count(&self) -> &Languages {
+        &self.count
     }
 }
 
 impl Count {
     pub(crate) fn create(&self, conn: &Connection) -> Result<(), Error> {
+        let json = serde_json::to_string(&self.count)?;
         conn.execute(
             "INSERT INTO counts (repo, date, count) VALUES (?1, ?2, ?3)",
-            (&self.repo, &self.date, &self.count),
+            (&self.repo, &self.date, &json),
         )?;
         Ok(())
     }
@@ -79,11 +81,13 @@ impl Count {
         let mut stmt = conn.prepare("SELECT id, repo, date, count FROM counts WHERE id=?1")?;
         let mut counts: Vec<Count> = stmt
             .query_map([&id], |row| {
+                let json: String = row.get(3)?;
+                let count = serde_json::from_str(&json).expect("should always get valud JSON");
                 Ok(Count {
                     id: row.get(0)?,
                     repo: row.get(1)?,
                     date: row.get(2)?,
-                    count: row.get(3)?,
+                    count: count,
                 })
             })?
             .filter_map(|p| p.ok())
@@ -100,11 +104,13 @@ impl Count {
         let mut stmt = conn.prepare("SELECT id, repo, date, count FROM counts")?;
         let counts: Vec<Count> = stmt
             .query_map([], |row| {
+                let json: String = row.get(3)?;
+                let count = serde_json::from_str(&json).expect("should always get valud JSON");
                 Ok(Count {
                     id: row.get(0)?,
                     repo: row.get(1)?,
                     date: row.get(2)?,
-                    count: row.get(3)?,
+                    count: count,
                 })
             })?
             .filter_map(|p| p.ok())

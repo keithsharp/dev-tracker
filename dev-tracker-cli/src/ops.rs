@@ -137,7 +137,7 @@ pub fn describe_project(args: DescribeProjectArgs, ds: &DataStore) -> anyhow::Re
     for repo in repos.iter() {
         println!("Repository path '{}'", repo.path().display());
         if let Some(count) = ds.get_latest_count(&repo)? {
-            println!("  {} lines of code", count.count())
+            println!("  {} lines of code", ds.get_total_loc(&count)?)
         }
     }
     if repos.is_empty() {
@@ -233,7 +233,7 @@ pub fn describe_count(args: DescribeCountArgs, ds: &DataStore) -> anyhow::Result
     println!("Project: {}", project.name());
     println!("Repository: {}", repo.path().display());
     println!("Date: {}", count.date().format("%A %d %B %Y at %I:%M%P"));
-    println!("Lines of code: {}", count.count());
+    println!("Lines of code: {}", ds.get_total_loc(&count)?);
 
     Ok(())
 }
@@ -353,7 +353,7 @@ pub fn list_counts(args: ListCountArgs, ds: &DataStore) -> anyhow::Result<()> {
                 "{} {} has {} lines of code",
                 count.date().format("%A %d %B %Y at %I:%M%P"),
                 repo.path().display(),
-                count.count()
+                ds.get_total_loc(&count)?
             );
         }
     }
