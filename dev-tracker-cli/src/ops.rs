@@ -136,7 +136,7 @@ pub fn describe_project(args: DescribeProjectArgs, ds: &DataStore) -> anyhow::Re
     let repos = ds.get_repos(&project)?;
     for repo in repos.iter() {
         println!("Repository path '{}'", repo.path().display());
-        if let Some(count) = ds.get_latest_count(&repo)? {
+        if let Some(count) = ds.get_latest_count(repo)? {
             println!("  {} lines of code", ds.get_total_loc(&count)?)
         }
     }
@@ -247,7 +247,7 @@ pub fn list_projects(args: ListProjectArgs, ds: &DataStore) -> anyhow::Result<()
         println!("{}", project.name());
     }
 
-    if projects.len() < 1 {
+    if projects.is_empty() {
         println!("No projects in database");
     }
 
@@ -301,19 +301,19 @@ pub fn list_activities(args: ListActivityArgs, ds: &DataStore) -> anyhow::Result
 
             println!(
                 "from {} until {}, total time {}",
-                local_start.format("%I:%M%P on %A %d %B %Y").to_string(),
-                local_end.format("%I:%M%P on %A %d %B %Y").to_string(),
+                local_start.format("%I:%M%P on %A %d %B %Y"),
+                local_end.format("%I:%M%P on %A %d %B %Y"),
                 duration
             )
         } else {
             println!(
                 "started at {}, and is still running",
-                local_start.format("%I:%M%P on %A %d %B %Y").to_string()
+                local_start.format("%I:%M%P on %A %d %B %Y")
             )
         }
     }
 
-    if activities.len() < 1 {
+    if activities.is_empty() {
         println!("No activities for project {} in database", project.name());
     }
 
@@ -329,7 +329,7 @@ pub fn list_activitytypes(args: ListActivityTypeArgs, ds: &DataStore) -> anyhow:
         println!("{}", at.name());
     }
 
-    if ats.len() < 1 {
+    if ats.is_empty() {
         println!("No activity types in database");
     }
 
@@ -344,7 +344,7 @@ pub fn list_counts(args: ListCountArgs, ds: &DataStore) -> anyhow::Result<()> {
 
     let repos = ds.get_repos(&project)?;
     for repo in repos.iter() {
-        let counts = ds.get_counts(&repo)?;
+        let counts = ds.get_counts(repo)?;
         for count in counts {
             if args.verbose {
                 print!("{}. ", count.id());
@@ -358,7 +358,7 @@ pub fn list_counts(args: ListCountArgs, ds: &DataStore) -> anyhow::Result<()> {
         }
     }
 
-    if repos.len() < 1 {
+    if repos.is_empty() {
         println!("No repositories for project {} in database", project.name());
     }
 
@@ -379,7 +379,7 @@ pub fn list_repos(args: ListRepoArgs, ds: &DataStore) -> anyhow::Result<()> {
         println!("{}", repo.path().display());
     }
 
-    if repos.len() < 1 {
+    if repos.is_empty() {
         println!("No repositories for project {} in database", project.name());
     }
 

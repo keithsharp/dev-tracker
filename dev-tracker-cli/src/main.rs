@@ -8,7 +8,7 @@ use dev_tracker_core::data::DataStore;
 mod cli;
 mod ops;
 
-const APP_NAME: &'static str = "dev-tracker";
+const APP_NAME: &str = "dev-tracker";
 
 fn main() -> anyhow::Result<()> {
     let args = cli::Arguments::parse();
@@ -100,10 +100,3 @@ fn default_data_file_path() -> PathBuf {
     path.set_extension("sqlite");
     path
 }
-
-// fn default_config_file_path() -> PathBuf {
-//     let mut path = default_file_directory();
-//     path.push("config");
-//     path.set_extension("toml");
-//     path
-// }
