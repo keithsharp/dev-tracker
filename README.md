@@ -51,7 +51,7 @@ By default, `dt` looks for it's data file:
 
 You can override the location by invoking `dt` with the `--data-file <PATH/TO/FILE>` option, for example:
 ```bash
-dt --data-file /tmp/test.sqlite list projects`
+dt --data-file /tmp/test.sqlite list projects
 ```
 Or you can set the environment variable `DT_DATA_FILE`, for example:
 ```bash
@@ -147,8 +147,9 @@ Updates the path for the repository with `OLD_PATH`.  Returns an error if there 
 2. Consider adding abbreviation aliases for other nouns.
 3. Use `clap_complete` to generate shell completions, probably need `xtask`.
 4. Translation/internationalization of the CLI.
-5. Polish:
-   1. Add help to Clap
+5. Add the ability to override the description of an activity when stopping it.
+6. Polish:
+   1. Run `clippy`
    2. Documentation of `dev-tracker-core`.
    3. Tests for `dev-tracker-core`.
 
