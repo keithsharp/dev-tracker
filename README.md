@@ -149,9 +149,8 @@ Updates the path for the repository with `OLD_PATH`.  Returns an error if there 
 4. Translation/internationalization of the CLI.
 5. Add the ability to override the description of an activity when stopping it.
 6. Polish:
-   1. Run `clippy`
-   2. Documentation of `dev-tracker-core`.
-   3. Tests for `dev-tracker-core`.
+   1. Documentation of `dev-tracker-core`.
+   2. Tests for `dev-tracker-core`.
 
 
 # Copyright and License
