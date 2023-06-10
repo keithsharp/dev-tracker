@@ -90,9 +90,9 @@ impl ActivityType {
             .collect();
 
         if ats.len() == 1 {
-            return Ok(Some(ats.remove(0)));
+            Ok(Some(ats.remove(0)))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 
@@ -139,7 +139,7 @@ impl ActivityType {
     }
 
     pub(crate) fn delete(self, conn: &Connection) -> Result<(), Error> {
-        conn.execute("DELETE FROM activitytypes WHERE id=?1", &[&self.id])?;
+        conn.execute("DELETE FROM activitytypes WHERE id=?1", [&self.id])?;
         Ok(())
     }
 }

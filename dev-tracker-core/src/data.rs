@@ -102,9 +102,9 @@ impl DataStore {
         let mut projects = Project::get_with_name(name, &self.conn)?;
 
         if projects.len() == 1 {
-            return Ok(Some(projects.remove(0)));
+            Ok(Some(projects.remove(0)))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 
@@ -171,9 +171,9 @@ impl DataStore {
         let mut ats = ActivityType::get_with_name(name, &self.conn)?;
 
         if ats.len() == 1 {
-            return Ok(Some(ats.remove(0)));
+            Ok(Some(ats.remove(0)))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 
@@ -260,9 +260,9 @@ impl DataStore {
             .collect();
 
         if activities.len() == 1 {
-            return Ok(Some(activities.remove(0)));
+            Ok(Some(activities.remove(0)))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 
@@ -322,9 +322,9 @@ impl DataStore {
         let mut repos = Repo::get_with_path(path, &self.conn)?;
 
         if repos.len() == 1 {
-            return Ok(Some(repos.remove(0)));
+            Ok(Some(repos.remove(0)))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 
@@ -404,6 +404,7 @@ impl DataStore {
 
     pub fn get_latest_count(&self, repo: &Repo) -> Result<Option<Count>, Error> {
         let mut counts = self.get_counts(repo)?;
+        #[allow(clippy::comparison_chain)]
         counts.sort_by(|a, b| {
             if a.date < b.date {
                 Ordering::Less
@@ -414,10 +415,10 @@ impl DataStore {
             }
         });
 
-        if counts.len() > 0 {
-            return Ok(Some(counts.remove(counts.len() - 1)));
+        if !counts.is_empty() {
+            Ok(Some(counts.remove(counts.len() - 1)))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 

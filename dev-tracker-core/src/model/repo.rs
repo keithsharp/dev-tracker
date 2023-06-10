@@ -86,9 +86,9 @@ impl Repo {
             .collect();
 
         if repos.len() == 1 {
-            return Ok(Some(repos.remove(0)));
+            Ok(Some(repos.remove(0)))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 
@@ -136,7 +136,7 @@ impl Repo {
     }
 
     pub(crate) fn delete(self, conn: &Connection) -> Result<(), Error> {
-        conn.execute("DELETE FROM repos WHERE id=?1", &[&self.id])?;
+        conn.execute("DELETE FROM repos WHERE id=?1", [&self.id])?;
         Ok(())
     }
 }

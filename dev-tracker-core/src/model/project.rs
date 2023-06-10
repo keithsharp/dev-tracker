@@ -47,7 +47,7 @@ impl Project {
 
 impl Project {
     pub(crate) fn create(&self, conn: &Connection) -> Result<(), Error> {
-        conn.execute("INSERT INTO projects (name) VALUES (?1)", &[&self.name])?;
+        conn.execute("INSERT INTO projects (name) VALUES (?1)", [&self.name])?;
         Ok(())
     }
 
@@ -64,9 +64,9 @@ impl Project {
             .collect();
 
         if projects.len() == 1 {
-            return Ok(Some(projects.remove(0)));
+            Ok(Some(projects.remove(0)))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 
@@ -110,7 +110,7 @@ impl Project {
     }
 
     pub(crate) fn delete(self, conn: &Connection) -> Result<(), Error> {
-        conn.execute("DELETE FROM projects WHERE id=?1", &[&self.id])?;
+        conn.execute("DELETE FROM projects WHERE id=?1", [&self.id])?;
         Ok(())
     }
 }

@@ -58,8 +58,8 @@ impl Activity {
     pub fn new(project: u64, atype: u64, description: Option<String>) -> Self {
         Self {
             id: 0,
-            project: project,
-            atype: atype,
+            project,
+            atype,
             description,
             start: Utc::now(),
             end: None,
@@ -149,9 +149,9 @@ impl Activity {
             .collect();
 
         if activities.len() == 1 {
-            return Ok(Some(activities.remove(0)));
+            Ok(Some(activities.remove(0)))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 
@@ -210,7 +210,7 @@ impl Activity {
     pub(crate) fn delete(self, conn: &Connection) -> Result<(), Error> {
         conn.execute(
             "DELETE FROM activities WHERE id=?1",
-            &[&self.id.to_string()],
+            [&self.id.to_string()],
         )?;
         Ok(())
     }

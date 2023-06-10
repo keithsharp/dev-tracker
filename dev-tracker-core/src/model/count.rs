@@ -87,16 +87,16 @@ impl Count {
                     id: row.get(0)?,
                     repo: row.get(1)?,
                     date: row.get(2)?,
-                    count: count,
+                    count,
                 })
             })?
             .filter_map(|p| p.ok())
             .collect();
 
         if counts.len() == 1 {
-            return Ok(Some(counts.remove(0)));
+            Ok(Some(counts.remove(0)))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 
@@ -110,7 +110,7 @@ impl Count {
                     id: row.get(0)?,
                     repo: row.get(1)?,
                     date: row.get(2)?,
-                    count: count,
+                    count,
                 })
             })?
             .filter_map(|p| p.ok())
@@ -120,7 +120,7 @@ impl Count {
     }
 
     pub(crate) fn delete(self, conn: &Connection) -> Result<(), Error> {
-        conn.execute("DELETE FROM counts WHERE id=?1", &[&self.id])?;
+        conn.execute("DELETE FROM counts WHERE id=?1", [&self.id])?;
         Ok(())
     }
 }
