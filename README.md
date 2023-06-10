@@ -142,17 +142,6 @@ Updates the description for the activity type with `NAME`.  Use this command wit
 ### `dt update repo <OLD_PATH> <NEW_PATH>`
 Updates the path for the repository with `OLD_PATH`.  Returns an error if there is no such repository  with `OLD_PATH` or if there is an existing repository with `NEW_PATH`.
 
-# TODO
-1. Add a `--json` flag (global/local) to make the output JSON.
-2. Consider adding abbreviation aliases for other nouns.
-3. Use `clap_complete` to generate shell completions, probably need `xtask`.
-4. Translation/internationalization of the CLI.
-5. Add the ability to override the description of an activity when stopping it.
-6. Polish:
-   1. Documentation of `dev-tracker-core`.
-   2. Tests for `dev-tracker-core`.
-
-
 # Copyright and License
 Copyright 2023, Keith Sharp, kms@passback.co.uk.
 
