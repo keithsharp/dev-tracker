@@ -11,12 +11,17 @@ mod ops;
 const APP_NAME: &'static str = "dev-tracker";
 
 fn main() -> anyhow::Result<()> {
-    if !default_file_directory().exists() {
-        create_default_file_dir()?;
-    }
-    let ds = DataStore::new(Some(&default_data_file_path()))?;
-
     let args = cli::Arguments::parse();
+
+    let ds = match args.data_file {
+        Some(path) => DataStore::new(Some(&path))?,
+        None => {
+            if !default_file_directory().exists() {
+                create_default_file_dir()?;
+            }
+            DataStore::new(Some(&default_data_file_path()))?
+        }
+    };
 
     match args.command {
         cli::Command::Add(command) => match command {

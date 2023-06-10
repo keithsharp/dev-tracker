@@ -1,8 +1,62 @@
 # Dev Tracker
 Tracking project development progress for solo developers.
 
+## Building and installing
+To build Dev Tracker, clone the git repository and then run `cargo build`:
+```bash
+$ git clone https://github.com/keithsharp/dev-tracker.git
+Cloning into 'dev-tracker'...
+remote: Enumerating objects: 226, done.
+remote: Counting objects: 100% (226/226), done.
+remote: Compressing objects: 100% (152/152), done.
+remote: Total 226 (delta 111), reused 186 (delta 71), pack-reused 0
+Receiving objects: 100% (226/226), 60.14 KiB | 669.00 KiB/s, done.
+Resolving deltas: 100% (111/111), done.
+$ cd dev-tracker
+$ cargo build
+...
+   Compiling dev-tracker-core v0.1.0 (/private/tmp/dev-tracker/dev-tracker-core)
+   Compiling dev-tracker-cli v0.1.0 (/private/tmp/dev-tracker/dev-tracker-cli)
+    Finished dev [unoptimized + debuginfo] target(s) in 46.53s
+$ cargo run -- list projects
+    Finished dev [unoptimized + debuginfo] target(s) in 0.23s
+     Running `target/debug/dt list projects`
+No projects in database
+```
+You can also install Dev Tracker using `cargo install`:
+```bash
+$ cargo install --path ./dev-tracker-cli
+  Installing dev-tracker-cli v0.1.0 (/private/tmp/dev-tracker/dev-tracker-cli)
+...
+    Finished release [optimized] target(s) in 3.34s
+  Installing /Users/kms/.cargo/bin/dt
+   Installed package `dev-tracker-cli v0.1.0 (/private/tmp/dev-tracker/dev-tracker-cli)` (executable `dt`)
+$ dt list projects
+No projects in database
+```
+You'll need to have `.cargo/bin/` on your `PATH` to run the `dt` command following installation.  You can uninstall Dev Tracker with:
+```bash
+$ cargo uninstall dev-tracker-cli
+    Removing /home/kms/.cargo/bin/dt
+```
+
 ## Usage
 Note all dates and times are stored in the database as UTC.  Input dates and times and displayed dates and times are in your local timezone.  You can also access the built in help with the command `dt help`.
+
+### Data File
+By default, `dt` looks for it's data file:
++ macOS - `$HOME/Library/Application Support/dev-tracker/dev-tracker.sqlite`
++ Linux - `$HOME/.config/dev-tracker/dev-tracker.sqlite` or `$XDG_CONFIG_HOME/dev-tracker/dev-tracker.sqlite`
++ Windows - should be in `{FOLDERID_RoamingAppData}`, but I've not tested this.
+
+You can override the location by invoking `dt` with the `--data-file <PATH/TO/FILE>` option, for example:
+```bash
+dt --data-file /tmp/test.sqlite list projects`
+```
+Or you can set the environment variable `DT_DATA_FILE`, for example:
+```bash
+export DT_DATA_FILE=/tmp/test.sqlite dt list projects
+```
 
 ### `dt add project <NAME> [PATH]`
 Creates a new project with `NAME` and optionally creates a repository for the project at `PATH`.  Repositories can also be added to a project using the `dt add repo <PROJECT> <PATH>` command.  Returns an error if there is an existing project with the same name.
@@ -89,15 +143,11 @@ Updates the description for the activity type with `NAME`.  Use this command wit
 Updates the path for the repository with `OLD_PATH`.  Returns an error if there is no such repository  with `OLD_PATH` or if there is an existing repository with `NEW_PATH`.
 
 # TODO
-1. `.get(idx).as_deref()` rather than `.remove()`?
-2. LoC counting for each project and repository, display in describe project.
-3. Remove the config file option.  Add a `--data-file` option to point to the database, have it configurable using an environment variable.
-4. Add a `--json` flag (global/local) to make the output JSON.
-5. Consider adding abbreviation aliases for other nouns.
-6. Use `clap_complete` to generate shell completions, probably need `xtask`.
-7. Translation/internationalization of the CLI.
-8. Build and install instructions.
-9. Polish:
+1. Add a `--json` flag (global/local) to make the output JSON.
+2. Consider adding abbreviation aliases for other nouns.
+3. Use `clap_complete` to generate shell completions, probably need `xtask`.
+4. Translation/internationalization of the CLI.
+5. Polish:
    1. Add help to Clap
    2. Documentation of `dev-tracker-core`.
    3. Tests for `dev-tracker-core`.

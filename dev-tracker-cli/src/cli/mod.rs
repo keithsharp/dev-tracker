@@ -13,8 +13,8 @@ mod errors;
 pub struct Arguments {
     #[clap(subcommand)]
     pub command: Command,
-    #[clap(long)]
-    pub config_file: Option<PathBuf>,
+    #[clap(long, env = "DT_DATA_FILE")]
+    pub data_file: Option<PathBuf>,
 }
 
 #[derive(Subcommand)]

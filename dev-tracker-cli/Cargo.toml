@@ -14,6 +14,6 @@ path ="./src/main.rs"
 [dependencies]
 anyhow = "1.0.71"
 chrono.workspace = true
-clap = { version = "4.3.1", features = ["derive"] }
+clap = { version = "4.3.1", features = ["derive", "env"] }
 dev-tracker-core = { path = "../dev-tracker-core" }
 dirs = "5.0.1"
