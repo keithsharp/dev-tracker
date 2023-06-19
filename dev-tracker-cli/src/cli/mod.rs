@@ -37,6 +37,9 @@ pub enum Command {
     /// Describe a project, activity, or count.
     #[clap(subcommand)]
     Describe(DescribeCommand),
+    /// Generate a text or JSON report for a project
+    #[clap(subcommand)]
+    Generate(GenerateCommand),
     /// List the projects, activities, activity types, counts, or repositories
     /// in the tracker.
     #[clap(subcommand)]
@@ -209,6 +212,29 @@ pub struct DescribeActivityArgs {
 pub struct DescribeCountArgs {
     /// The count to describe.
     pub id: u64,
+}
+
+#[derive(Subcommand)]
+pub enum GenerateCommand {
+    /// Generate a text report for the project
+    Report(GenerateArgs),
+    /// Generate a JSON report for the project
+    Json(GenerateArgs),
+}
+
+#[derive(Args)]
+pub struct GenerateArgs {
+    /// The name of the project to report on.  Use 'all' to report on all
+    /// projects.  
+    pub name: String,
+    /// An optional start date for the report.  The date format is DD-MM-YYYY.
+    /// If omitted the report uses all activites up until the end date or now.
+    #[arg(value_parser = parse_date)]
+    pub start: Option<DateTime<Utc>>,
+    /// An optional end date for the report.  The date format is DD-MM-YYYY.
+    /// If omitted the report uses an end date of now.
+    #[arg(value_parser = parse_date)]
+    pub end: Option<DateTime<Utc>>,
 }
 
 #[derive(Subcommand)]

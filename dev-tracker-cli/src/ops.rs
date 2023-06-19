@@ -7,7 +7,7 @@ use dev_tracker_core::data::DataStore;
 use crate::cli::{
     AddActivityTypeArgs, AddProjectArgs, AddRepoArgs, CancelActivityTypeArgs, CountCommandArgs,
     DeleteActivityArgs, DeleteActivityTypeArgs, DeleteCountArgs, DeleteProjectArgs, DeleteRepoArgs,
-    DescribeActivityArgs, DescribeCountArgs, DescribeProjectArgs, ListActivityArgs,
+    DescribeActivityArgs, DescribeCountArgs, DescribeProjectArgs, GenerateArgs, ListActivityArgs,
     ListActivityTypeArgs, ListCountArgs, ListProjectArgs, ListRepoArgs, RenameActivityTypeArgs,
     RenameProjectArgs, StartActivityArgs, StopActivityArgs, UpdateActivityActivityTypeArgs,
     UpdateActivityDescriptionArgs, UpdateActivityEndArgs, UpdateActivityProjectArgs,
@@ -578,6 +578,51 @@ pub fn update_repo(args: UpdateRepoArgs, ds: &DataStore) -> anyhow::Result<()> {
 
     repo.set_path(args.new_path);
     ds.update_repo(&repo)?;
+
+    Ok(())
+}
+
+pub fn generate_report(args: GenerateArgs, ds: &DataStore) -> anyhow::Result<()> {
+    if args.name == "all" {
+        let projects = ds.get_projects()?;
+
+        for project in projects {
+            let report = ds.create_report(&project, args.start, args.end)?;
+            report.print();
+        }
+    } else {
+        let Some(project) = ds.get_project(&args.name)? else {
+            eprintln!("Generate report failed, no such project: {}", args.name);
+            process::exit(1);
+        };
+
+        let report = ds.create_report(&project, args.start, args.end)?;
+        report.print();
+    }
+
+    Ok(())
+}
+
+pub fn generate_json(args: GenerateArgs, ds: &DataStore) -> anyhow::Result<()> {
+    if args.name == "all" {
+        let reports: Vec<_> = ds
+            .get_projects()?
+            .iter()
+            .map(|p| ds.create_report(p, args.start, args.end).ok())
+            .filter_map(|r| r)
+            .collect();
+        let json = serde_json::to_string_pretty(&reports)?;
+        print!("{}", json);
+    } else {
+        let Some(project) = ds.get_project(&args.name)? else {
+            eprintln!("Generate report failed, no such project: {}", args.name);
+            process::exit(1);
+        };
+
+        let report = ds.create_report(&project, args.start, args.end)?;
+        let json = serde_json::to_string(&report)?;
+        print!("{}", json);
+    }
 
     Ok(())
 }

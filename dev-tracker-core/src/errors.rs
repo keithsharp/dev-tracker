@@ -15,6 +15,7 @@ pub enum Error {
     ActivityAlreadyExists(String),
     RunningActivityAlreadyExists(String),
     CountNotFound(String),
+    ReportError(String),
 }
 
 impl Display for Error {
@@ -51,6 +52,7 @@ impl Display for Error {
                 format!("runningactivity already exists in project '{}'", item),
             ),
             Error::CountNotFound(item) => ("notfound", format!("count '{}' not found", item)),
+            Error::ReportError(item) => ("report", format!("could not create report: '{}'", item)),
         };
         write!(f, "error in {}: {}", module, e)
     }

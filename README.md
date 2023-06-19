@@ -97,6 +97,12 @@ Describes the activity with `ID`.  Lists the project name, the activity type, th
 ### `dt describe count <ID>`
 Describes the count with `ID`.  Lists project name, the repository path, the date and time of the count, and the lines of Rust code.  To obtain the `ID` of a count use the `-v` flag for the `dt list counts <PROJECT>` command.  Returns an error if there is no such count, project, or repository.
 
+### `dt generate report <PROJECT|all>`
+Generate a text report for `PROJECT` or for `all` projects.
+
+### `dt generate json <PROJECT|all>`
+Generate a JSON report for `PROJECT` or for `all` projects.
+
 ### `dt list projects [-v]`
 List all of the projects in the database.  Use the optional `-v` flag to list the ID numbers for the projects.
 

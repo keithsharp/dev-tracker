@@ -1,7 +1,8 @@
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rusqlite::Connection;
 use tokei::{Config, Languages};
 
@@ -11,6 +12,7 @@ use crate::model::count::Count;
 use crate::model::project::Project;
 use crate::model::repo::Repo;
 use crate::model::{activity, activitytype, count, project, repo};
+use crate::report::{self, Report};
 use crate::Error;
 
 #[derive(Debug)]
@@ -451,5 +453,109 @@ impl DataStore {
         };
 
         Ok(count.count.total().code as u64)
+    }
+}
+
+// Report
+impl DataStore {
+    pub fn create_report(
+        &self,
+        project: &Project,
+        start: Option<DateTime<Utc>>,
+        end: Option<DateTime<Utc>>,
+    ) -> Result<Report, Error> {
+        let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
+            return Err(Error::ProjectNotFound(project.id.to_string()));
+        };
+
+        let mut report = Report::new(&project, start, end);
+
+        let activities = self.get_report_activities(&project, start, end)?;
+        report.activities = activities;
+
+        let counts = self.get_report_counts(&project, start, end)?;
+        report.counts = counts;
+
+        Ok(report)
+    }
+
+    fn get_report_activities(
+        &self,
+        project: &Project,
+        start: Option<DateTime<Utc>>,
+        end: Option<DateTime<Utc>>,
+    ) -> Result<Vec<report::Activity>, Error> {
+        let activities = self.get_activities(&project)?;
+
+        let activities = match (start, end) {
+            (None, None) => activities,
+            (None, Some(end)) => activities.into_iter().filter(|a| a.start <= end).collect(),
+            (Some(start), None) => activities
+                .into_iter()
+                .filter(|a| a.start >= start)
+                .collect(),
+            (Some(start), Some(end)) => activities
+                .into_iter()
+                .filter(|a| a.start >= start && a.start <= end)
+                .collect(),
+        };
+
+        let activities: Vec<_> = activities
+            .into_iter()
+            .map(|a| {
+                let at = ActivityType::get_with_id(a.atype, &self.conn)
+                    .expect("should always be able to access the datastore");
+                let name = at.map_or_else(|| "Unknown".to_string(), |at| at.name);
+                let start = a.start;
+                let end = a.end.unwrap_or(Utc::now());
+                let duration = end - start;
+                report::Activity {
+                    name,
+                    start,
+                    minutes: duration.num_minutes(),
+                }
+            })
+            .collect();
+
+        Ok(activities)
+    }
+
+    fn get_report_counts(
+        &self,
+        project: &Project,
+        start: Option<DateTime<Utc>>,
+        end: Option<DateTime<Utc>>,
+    ) -> Result<HashMap<String, Vec<report::Count>>, Error> {
+        let mut all_counts = HashMap::new();
+
+        let repos = self.get_repos(&project)?;
+        for repo in repos {
+            let counts = self.get_counts(&repo)?;
+
+            let counts = match (start, end) {
+                (None, None) => counts,
+                (None, Some(end)) => counts.into_iter().filter(|c| c.date <= end).collect(),
+                (Some(start), None) => counts.into_iter().filter(|c| c.date >= start).collect(),
+                (Some(start), Some(end)) => counts
+                    .into_iter()
+                    .filter(|c| c.date >= start && c.date <= end)
+                    .collect(),
+            };
+
+            let path = repo.path.display().to_string();
+
+            let counts: Vec<_> = counts
+                .into_iter()
+                .map(|c| report::Count {
+                    path: path.clone(),
+                    date: c.date,
+                    count: c.count,
+                })
+                .collect();
+
+            all_counts.insert(path, counts);
+        }
+
+        Ok(all_counts)
     }
 }

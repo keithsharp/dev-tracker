@@ -78,6 +78,10 @@ fn main() -> anyhow::Result<()> {
             },
             cli::UpdateCommand::Repo(args) => ops::update_repo(args, &ds)?,
         },
+        cli::Command::Generate(command) => match command {
+            cli::GenerateCommand::Report(args) => ops::generate_report(args, &ds)?,
+            cli::GenerateCommand::Json(args) => ops::generate_json(args, &ds)?,
+        },
     }
 
     Ok(())
