@@ -222,7 +222,7 @@ impl DataStore {
             return Err(Error::ProjectNotFound(project.id.to_string()));
         };
 
-        let Some(activity) = self.stop_running_activity(&project)? else {
+        let Some(activity) = self.stop_running_activity(&project, None)? else {
             return Ok(());
         };
 
@@ -231,7 +231,11 @@ impl DataStore {
         Ok(())
     }
 
-    pub fn stop_running_activity(&self, project: &Project) -> Result<Option<Activity>, Error> {
+    pub fn stop_running_activity(
+        &self,
+        project: &Project,
+        description: Option<String>,
+    ) -> Result<Option<Activity>, Error> {
         let Some(project) = Project::get_with_id(project.id, &self.conn)? else {
             return Err(Error::ProjectNotFound(project.id.to_string()));
         };
@@ -244,6 +248,7 @@ impl DataStore {
         if activities.len() == 1 {
             let mut activity = activities.remove(0);
             activity.end = Some(Utc::now());
+            activity.description = description;
             activity.update(&self.conn)?;
             return Ok(Some(activity));
         }

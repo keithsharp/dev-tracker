@@ -456,7 +456,10 @@ pub fn stop_activity(args: StopActivityArgs, ds: &DataStore) -> anyhow::Result<(
         process::exit(1);
     };
 
-    if ds.stop_running_activity(&project)?.is_none() {
+    if ds
+        .stop_running_activity(&project, args.description)?
+        .is_none()
+    {
         eprintln!(
             "Stop activity failed, no activity running for {}",
             project.name()

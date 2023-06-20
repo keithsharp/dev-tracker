@@ -368,6 +368,9 @@ pub enum StopCommand {
 pub struct StopActivityArgs {
     /// The project which has a running activity to stop.
     pub project: String,
+    /// An optional description of the activity, will overwrite any
+    /// description that already exists.
+    pub description: Option<String>,
     /// Override the default behavior of creating a count of the lines of code
     /// in a project at the end of the activity.
     #[clap(long, action)]

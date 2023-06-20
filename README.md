@@ -130,8 +130,8 @@ Show the status of `PROJECT` or of all projects.
 ### `dt start activity <PROJECT> <ACTIVITY_TYPE> [DESCRIPTION]`
 Start recording an activity for `PROJECT` with an activity type of `ACTIVITY_TYPE` and an optional `DESCRIPTION`.  Returns an error if there is no such project or activity type, or if there already an activity in progress for the project.
 
-### `dt stop activity <PROJECT>`
-Stops the current activity for `PROJECT`.  Returns an error if there is no such project or of there is no current activity in progress.
+### `dt stop activity <PROJECT> [DESCRIPTION]`
+Stops the current activity for `PROJECT` and updates the activity record with `DESCRIPTION`.  Returns an error if there is no such project or of there is no current activity in progress.
 
 ### `dt update activity end <ID> <END>`
 Updates the end time for the activity with `ID`.  `END` should be in the format `YYYY-MM-DDTHH:MM` where the date and time are in your local timezone and the time uses the 24-hour clock.  To obtain the `ID` of an activity use the `-v` flag for the `dt list activities <PROJECT>` command.  Returns an error if there is no such activity, if the new end time is before the activity start time, or if there is an error parsing the date and time from your local timezone into UTC.
