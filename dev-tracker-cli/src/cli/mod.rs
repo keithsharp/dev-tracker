@@ -47,6 +47,8 @@ pub enum Command {
     /// Rename a project or activity type.
     #[clap(subcommand)]
     Rename(RenameCommand),
+    /// Show the status
+    Status(StatusArgs),
     // #[clap(subcommand)]
     // Set(),
     /// Start recording an activity.
@@ -216,9 +218,9 @@ pub struct DescribeCountArgs {
 
 #[derive(Subcommand)]
 pub enum GenerateCommand {
-    /// Generate a text report for the project
+    /// Generate a text report for the project.
     Report(GenerateArgs),
-    /// Generate a JSON report for the project
+    /// Generate a JSON report for the project.
     Json(GenerateArgs),
 }
 
@@ -328,6 +330,12 @@ pub struct RenameActivityTypeArgs {
     pub old_name: String,
     /// The new activity type name.
     pub new_name: String,
+}
+
+#[derive(Args)]
+pub struct StatusArgs {
+    /// The name of the project
+    pub name: Option<String>,
 }
 
 #[derive(Subcommand)]

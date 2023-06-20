@@ -1,6 +1,6 @@
 use std::process;
 
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Utc};
 
 use dev_tracker_core::data::DataStore;
 
@@ -9,9 +9,9 @@ use crate::cli::{
     DeleteActivityArgs, DeleteActivityTypeArgs, DeleteCountArgs, DeleteProjectArgs, DeleteRepoArgs,
     DescribeActivityArgs, DescribeCountArgs, DescribeProjectArgs, GenerateArgs, ListActivityArgs,
     ListActivityTypeArgs, ListCountArgs, ListProjectArgs, ListRepoArgs, RenameActivityTypeArgs,
-    RenameProjectArgs, StartActivityArgs, StopActivityArgs, UpdateActivityActivityTypeArgs,
-    UpdateActivityDescriptionArgs, UpdateActivityEndArgs, UpdateActivityProjectArgs,
-    UpdateActivityTypeArgs, UpdateRepoArgs,
+    RenameProjectArgs, StartActivityArgs, StatusArgs, StopActivityArgs,
+    UpdateActivityActivityTypeArgs, UpdateActivityDescriptionArgs, UpdateActivityEndArgs,
+    UpdateActivityProjectArgs, UpdateActivityTypeArgs, UpdateRepoArgs,
 };
 
 pub fn add_project(args: AddProjectArgs, ds: &DataStore) -> anyhow::Result<()> {
@@ -622,6 +622,69 @@ pub fn generate_json(args: GenerateArgs, ds: &DataStore) -> anyhow::Result<()> {
         let report = ds.create_report(&project, args.start, args.end)?;
         let json = serde_json::to_string(&report)?;
         print!("{}", json);
+    }
+
+    Ok(())
+}
+
+pub fn show_status(args: StatusArgs, ds: &DataStore) -> anyhow::Result<()> {
+    if let Some(name) = args.name {
+        let Some(project) = ds.get_project(&name)? else {
+            eprintln!("Show status failed, no such project: {}", name);
+            process::exit(1);
+        };
+
+        if let Some(activity) = ds.get_running_activity(&project)? {
+            let atype = match ds.get_activitytype_with_id(activity.atype())? {
+                Some(at) => at.name().to_string(),
+                None => "Unknown".to_string(),
+            };
+            let local_start: DateTime<Local> = DateTime::from(activity.start_time());
+            let duration = Utc::now() - activity.start_time();
+            println!(
+                "{} started at {} and has been running for {} minutes.",
+                atype,
+                local_start.format("%I:%M%P on %A %d %B %Y"),
+                duration.num_minutes()
+            );
+        } else {
+            println!("No activities running for {}.", name);
+        }
+    } else {
+        let projects = ds.get_projects()?;
+        let mut activities = Vec::new();
+
+        for project in projects {
+            if let Some(activity) = ds.get_running_activity(&project)? {
+                activities.push(activity);
+            }
+        }
+
+        if activities.is_empty() {
+            println!("No running activities.");
+            return Ok(());
+        }
+
+        for activity in activities {
+            let atype = match ds.get_activitytype_with_id(activity.atype())? {
+                Some(at) => at.name().to_string(),
+                None => "Unknown".to_string(),
+            };
+
+            let project = match ds.get_project_with_id(activity.project())? {
+                Some(project) => project.name().to_string(),
+                None => "Unknown".to_string(),
+            };
+            let local_start: DateTime<Local> = DateTime::from(activity.start_time());
+            let duration = Utc::now() - activity.start_time();
+            println!(
+                "Project {}: {} started at {} and has been running for {} minutes.",
+                project,
+                atype,
+                local_start.format("%I:%M%P on %A %d %B %Y"),
+                duration.num_minutes()
+            );
+        }
     }
 
     Ok(())

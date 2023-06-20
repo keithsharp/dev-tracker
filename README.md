@@ -124,6 +124,9 @@ Renames a project from `OLD_NAME` to `NEW_NAME`.  Returns an error if there is n
 ### `dt rename activity-type <OLD_NAME> <NEW_NAME>`
 Renames an activity type from `OLD_NAME` to `NEW_NAME`.  Returns an error if there is no activity type with name `NEW_NAME` or if there is an existing activity type with `NEW_NAME`.
 
+### `dt status [PROJECT]`
+Show the status of `PROJECT` or of all projects.
+
 ### `dt start activity <PROJECT> <ACTIVITY_TYPE> [DESCRIPTION]`
 Start recording an activity for `PROJECT` with an activity type of `ACTIVITY_TYPE` and an optional `DESCRIPTION`.  Returns an error if there is no such project or activity type, or if there already an activity in progress for the project.
 

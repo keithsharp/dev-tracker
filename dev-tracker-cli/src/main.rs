@@ -82,6 +82,7 @@ fn main() -> anyhow::Result<()> {
             cli::GenerateCommand::Report(args) => ops::generate_report(args, &ds)?,
             cli::GenerateCommand::Json(args) => ops::generate_json(args, &ds)?,
         },
+        cli::Command::Status(args) => ops::show_status(args, &ds)?,
     }
 
     Ok(())
